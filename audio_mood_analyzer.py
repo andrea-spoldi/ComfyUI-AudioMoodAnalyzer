@@ -59,6 +59,7 @@ class AudioMoodAnalyzer:
         model,
         temperature,
         custom_context,
+        lyrics_or_text,
         generate_environment_prompt,
         generate_subject_prompt,
         generate_merge_prompt,
@@ -101,6 +102,7 @@ class AudioMoodAnalyzer:
                 model=model,
                 prompt=self._build_environment_prompt_request(
                     mood_json=mood_json,
+                    subject_json=subject_json,
                     custom_context=custom_context,
                 ),
                 temperature=temperature,
@@ -111,7 +113,7 @@ class AudioMoodAnalyzer:
                 ollama_url=ollama_url,
                 model=model,
                 prompt=self._build_subject_prompt_request(
-                    mood_json=mood_json,
+                    subject_json=subject_json,
                     custom_context=custom_context,
                 ),
                 temperature=temperature,
@@ -132,6 +134,7 @@ class AudioMoodAnalyzer:
 
         return (
             json.dumps(mood_json, indent=2, ensure_ascii=False),
+            json.dumps(subject_json, indent=2, ensure_ascii=False),
             environment_prompt,
             subject_prompt,
             merge_prompt,
