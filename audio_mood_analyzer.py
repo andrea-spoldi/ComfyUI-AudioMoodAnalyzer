@@ -53,9 +53,9 @@ class AudioMoodAnalyzer:
                 "generate_subject_prompt": ("BOOLEAN", {"default": True}),
                 "generate_merge_prompt": ("BOOLEAN", {"default": True}),
                 "max_tokens_analysis": ("INT", {
-                    "default": 512,
+                    "default": 2048,
                     "min": 64,
-                    "max": 4096,
+                    "max": 8192,
                     "step": 64
                 }),
 
@@ -474,6 +474,10 @@ Output only the final image-generation prompt.
                 except json.JSONDecodeError:
                     pass
 
+            print(
+                f"{_LOG} ⚠ JSON parse failed — response may be truncated "
+                f"({len(text)} chars received). Try raising max_tokens_analysis."
+            )
             return {
                 "error": "Could not parse model output as JSON",
                 "raw_output": text
