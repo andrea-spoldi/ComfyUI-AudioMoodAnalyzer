@@ -1,7 +1,10 @@
 import json
+import time
 import requests
 import numpy as np
 import librosa
+
+_LOG = "[AudioMoodAnalyzer]"
 
 
 class AudioMoodAnalyzer:
@@ -95,10 +98,15 @@ class AudioMoodAnalyzer:
         max_tokens_analysis,
         max_tokens_prompt,
     ):
+        t0 = time.time()
         y, sr = self._audio_to_numpy(audio)
         features = self._extract_features(y, sr)
+        duration = features.get("duration_seconds", "?")
+        print(f"{_LOG} audio: {duration}s  model: {model}")
 
         mood_prompt = self._build_mood_prompt(features, custom_context)
+        print(f"{_LOG} ▶ mood analysis  (max_tokens={max_tokens_analysis})")
+        t = time.time()
         raw_mood = self._ollama_generate(
             ollama_url=ollama_url,
             model=model,
@@ -106,11 +114,14 @@ class AudioMoodAnalyzer:
             temperature=analysis_temperature,
             num_predict=max_tokens_analysis,
         )
+        print(f"{_LOG} ✓ mood analysis  ({time.time()-t:.1f}s, {len(raw_mood)} chars)")
 
         mood_json = self._extract_json(raw_mood)
         subject_json = {}
 
         if lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip():
+            print(f"{_LOG} ▶ subject analysis  (max_tokens={max_tokens_analysis})")
+            t = time.time()
             raw_subject = self._ollama_generate(
                 ollama_url=ollama_url,
                 model=model,
@@ -123,6 +134,7 @@ class AudioMoodAnalyzer:
                 temperature=analysis_temperature,
                 num_predict=max_tokens_analysis,
             )
+            print(f"{_LOG} ✓ subject analysis  ({time.time()-t:.1f}s, {len(raw_subject)} chars)")
             subject_json = self._extract_json(raw_subject)
 
         summary = self._build_summary(mood_json)
@@ -132,6 +144,8 @@ class AudioMoodAnalyzer:
         merge_prompt = ""
 
         if generate_environment_prompt:
+            print(f"{_LOG} ▶ environment prompt  (max_tokens={max_tokens_prompt})")
+            t = time.time()
             environment_prompt = self._ollama_generate(
                 ollama_url=ollama_url,
                 model=model,
@@ -143,8 +157,11 @@ class AudioMoodAnalyzer:
                 temperature=prompt_temperature,
                 num_predict=max_tokens_prompt,
             )
+            print(f"{_LOG} ✓ environment prompt  ({time.time()-t:.1f}s, {len(environment_prompt)} chars)")
 
         if generate_subject_prompt:
+            print(f"{_LOG} ▶ subject prompt  (max_tokens={max_tokens_prompt})")
+            t = time.time()
             subject_prompt = self._ollama_generate(
                 ollama_url=ollama_url,
                 model=model,
@@ -155,8 +172,11 @@ class AudioMoodAnalyzer:
                 temperature=prompt_temperature,
                 num_predict=max_tokens_prompt,
             )
+            print(f"{_LOG} ✓ subject prompt  ({time.time()-t:.1f}s, {len(subject_prompt)} chars)")
 
         if generate_merge_prompt:
+            print(f"{_LOG} ▶ merge prompt  (max_tokens={max_tokens_prompt})")
+            t = time.time()
             merge_prompt = self._ollama_generate(
                 ollama_url=ollama_url,
                 model=model,
@@ -169,6 +189,9 @@ class AudioMoodAnalyzer:
                 temperature=prompt_temperature,
                 num_predict=max_tokens_prompt,
             )
+            print(f"{_LOG} ✓ merge prompt  ({time.time()-t:.1f}s, {len(merge_prompt)} chars)")
+
+        print(f"{_LOG} done  total: {time.time()-t0:.1f}s")
 
         return (
             json.dumps(mood_json, indent=2, ensure_ascii=False),
@@ -264,7 +287,7 @@ class AudioMoodAnalyzer:
                     "num_predict": num_predict
                 }
             },
-            timeout=240,
+            timeout=600,
         )
         response.raise_for_status()
         return response.json().get("response", "").strip()
