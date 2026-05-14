@@ -105,14 +105,13 @@ class AudioMoodAnalyzer:
         print(f"{_LOG} audio: {duration}s  model: {model}")
 
         mood_prompt = self._build_mood_prompt(features, custom_context)
-        print(f"{_LOG} ▶ mood analysis  (max_tokens={max_tokens_analysis})")
+        print(f"{_LOG} ▶ mood analysis")
         t = time.time()
         raw_mood = self._ollama_generate(
             ollama_url=ollama_url,
             model=model,
             prompt=mood_prompt,
             temperature=analysis_temperature,
-            num_predict=max_tokens_analysis,
         )
         print(f"{_LOG} ✓ mood analysis  ({time.time()-t:.1f}s, {len(raw_mood)} chars)")
 
@@ -120,7 +119,7 @@ class AudioMoodAnalyzer:
         subject_json = {}
 
         if lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip():
-            print(f"{_LOG} ▶ subject analysis  (max_tokens={max_tokens_analysis})")
+            print(f"{_LOG} ▶ subject analysis")
             t = time.time()
             raw_subject = self._ollama_generate(
                 ollama_url=ollama_url,
@@ -132,7 +131,6 @@ class AudioMoodAnalyzer:
                     song_title=song_title,
                 ),
                 temperature=analysis_temperature,
-                num_predict=max_tokens_analysis,
             )
             print(f"{_LOG} ✓ subject analysis  ({time.time()-t:.1f}s, {len(raw_subject)} chars)")
             subject_json = self._extract_json(raw_subject)
@@ -275,7 +273,7 @@ class AudioMoodAnalyzer:
 
         return result
 
-    def _ollama_generate(self, ollama_url, model, prompt, temperature, num_predict):
+    def _ollama_generate(self, ollama_url, model, prompt, temperature, num_predict=-1):
         response = requests.post(
             ollama_url,
             json={
@@ -290,7 +288,11 @@ class AudioMoodAnalyzer:
             timeout=600,
         )
         response.raise_for_status()
-        return response.json().get("response", "").strip()
+        data = response.json()
+        thinking = data.get("thinking", "")
+        if thinking:
+            print(f"{_LOG}   thinking: {len(thinking)} chars")
+        return data.get("response", "").strip()
 
     def _build_mood_prompt(self, features, custom_context):
         return f"""
