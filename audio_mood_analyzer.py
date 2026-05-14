@@ -111,7 +111,7 @@ class AudioMoodAnalyzer:
         raw_mood = self._timed_generate(
             "mood analysis", ollama_url, model,
             self._build_mood_prompt(features, custom_context),
-            analysis_temperature, max_tokens_analysis,
+            analysis_temperature,
         )
         mood_json = self._extract_json(raw_mood)
         subject_json = {}
@@ -125,7 +125,7 @@ class AudioMoodAnalyzer:
                     custom_context=custom_context,
                     song_title=song_title,
                 ),
-                analysis_temperature, max_tokens_analysis,
+                analysis_temperature,
             )
             subject_json = self._extract_json(raw_subject)
 
@@ -279,7 +279,19 @@ class AudioMoodAnalyzer:
         thinking = data.get("thinking", "")
         if thinking:
             print(f"{_LOG}   thinking: {len(thinking)} chars")
-        return data.get("response", "").strip()
+        result = data.get("response", "").strip()
+        if not result:
+            print(f"{_LOG} ⚠ empty response from Ollama — diagnostics:")
+            print(f"{_LOG}   done_reason : {data.get('done_reason', 'n/a')}")
+            print(f"{_LOG}   eval_count  : {data.get('eval_count', 'n/a')}  (response tokens generated)")
+            print(f"{_LOG}   prompt_eval : {data.get('prompt_eval_count', 'n/a')}  (prompt tokens)")
+            print(f"{_LOG}   thinking    : {len(thinking)} chars")
+            print(f"{_LOG}   response key present: {'response' in data}")
+            if data.get("done_reason") == "length":
+                print(f"{_LOG}   → token budget exhausted (done_reason=length); analysis calls use num_predict=-1 (unlimited) — check Ollama version or model context limit")
+            elif not thinking and not result:
+                print(f"{_LOG}   → no thinking and no response; raw keys: {list(data.keys())}")
+        return result
 
     def _build_mood_prompt(self, features, custom_context):
         return f"""
