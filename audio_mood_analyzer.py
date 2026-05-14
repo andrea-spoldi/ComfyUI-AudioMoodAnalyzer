@@ -132,14 +132,17 @@ class AudioMoodAnalyzer:
             )
 
         if generate_subject_prompt:
-            subject_prompt = self._timed_generate(
-                "subject prompt", ollama_url, model,
-                self._build_subject_prompt_request(
-                    subject_json=subject_json,
-                    custom_context=custom_context,
-                ),
-                prompt_temperature,
-            )
+            if subject_json and "error" not in subject_json:
+                subject_prompt = self._timed_generate(
+                    "subject prompt", ollama_url, model,
+                    self._build_subject_prompt_request(
+                        subject_json=subject_json,
+                        custom_context=custom_context,
+                    ),
+                    prompt_temperature,
+                )
+            else:
+                print(f"{_LOG} ⚠ subject prompt skipped — no subject analysis available (provide lyrics, focus_fragment, or song_title)")
 
         if generate_merge_prompt:
             merge_prompt = self._timed_generate(
