@@ -24,12 +24,17 @@ Restart ComfyUI. The node appears under **audio/analysis**.
 | `audio` | AUDIO | Audio input from any ComfyUI audio loader |
 | `ollama_url` | STRING | Ollama API endpoint (default: `http://localhost:11434/api/generate`) |
 | `model` | STRING | Ollama model name (default: `qwen3:14b`) |
-| `temperature` | FLOAT | LLM temperature 0.0–1.5 (default: `0.7`) |
+| `analysis_temperature` | FLOAT | Temperature for structured JSON analysis calls — lower = more consistent (default: `0.4`) |
+| `prompt_temperature` | FLOAT | Temperature for creative image-prompt generation calls — higher = more expressive (default: `0.8`) |
 | `custom_context` | STRING | Creative direction injected into every prompt |
-| `lyrics_or_text` | STRING | Optional lyrics or text for subject analysis |
+| `lyrics_or_text` | STRING | Optional full lyrics or source text for subject analysis |
+| `focus_fragment` | STRING | Optional key line or phrase used as the primary emotional/visual anchor |
+| `song_title` | STRING | Optional song title used as thematic and symbolic context |
 | `generate_environment_prompt` | BOOLEAN | Generate an environment-only image prompt |
 | `generate_subject_prompt` | BOOLEAN | Generate a subject-only image prompt |
 | `generate_merge_prompt` | BOOLEAN | Generate a merged final image prompt |
+| `max_tokens_analysis` | INT | Token budget for each analysis call (default: `512`) |
+| `max_tokens_prompt` | INT | Token budget for each prompt-generation call (default: `256`) |
 
 ## Outputs
 

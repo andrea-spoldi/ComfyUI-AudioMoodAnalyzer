@@ -16,8 +16,14 @@ class AudioMoodAnalyzer:
                 "model": ("STRING", {
                     "default": "qwen3:14b"
                 }),
-                "temperature": ("FLOAT", {
-                    "default": 0.7,
+                "analysis_temperature": ("FLOAT", {
+                    "default": 0.4,
+                    "min": 0.0,
+                    "max": 1.5,
+                    "step": 0.1
+                }),
+                "prompt_temperature": ("FLOAT", {
+                    "default": 0.8,
                     "min": 0.0,
                     "max": 1.5,
                     "step": 0.1
@@ -33,9 +39,29 @@ class AudioMoodAnalyzer:
                     "multiline": True,
                     "default": ""
                 }),
+                "focus_fragment": ("STRING", {
+                    "multiline": True,
+                    "default": ""
+                }),
+                "song_title": ("STRING", {
+                    "default": ""
+                }),
                 "generate_environment_prompt": ("BOOLEAN", {"default": True}),
                 "generate_subject_prompt": ("BOOLEAN", {"default": True}),
                 "generate_merge_prompt": ("BOOLEAN", {"default": True}),
+                "max_tokens_analysis": ("INT", {
+                    "default": 512,
+                    "min": 64,
+                    "max": 4096,
+                    "step": 64
+                }),
+
+                "max_tokens_prompt": ("INT", {
+                    "default": 256,
+                    "min": 64,
+                    "max": 4096,
+                    "step": 64
+                }),
             }
         }
 
@@ -57,12 +83,17 @@ class AudioMoodAnalyzer:
         audio,
         ollama_url,
         model,
-        temperature,
+        analysis_temperature,
+        prompt_temperature,
         custom_context,
         lyrics_or_text,
+        focus_fragment,
+        song_title,
         generate_environment_prompt,
         generate_subject_prompt,
         generate_merge_prompt,
+        max_tokens_analysis,
+        max_tokens_prompt,
     ):
         y, sr = self._audio_to_numpy(audio)
         features = self._extract_features(y, sr)
@@ -72,21 +103,25 @@ class AudioMoodAnalyzer:
             ollama_url=ollama_url,
             model=model,
             prompt=mood_prompt,
-            temperature=temperature,
+            temperature=analysis_temperature,
+            num_predict=max_tokens_analysis,
         )
 
         mood_json = self._extract_json(raw_mood)
         subject_json = {}
 
-        if lyrics_or_text.strip():
+        if lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip():
             raw_subject = self._ollama_generate(
                 ollama_url=ollama_url,
                 model=model,
                 prompt=self._build_subject_analysis_prompt(
                     lyrics_or_text=lyrics_or_text,
+                    focus_fragment=focus_fragment,
                     custom_context=custom_context,
+                    song_title=song_title,
                 ),
-                temperature=temperature,
+                temperature=analysis_temperature,
+                num_predict=max_tokens_analysis,
             )
             subject_json = self._extract_json(raw_subject)
 
@@ -105,7 +140,8 @@ class AudioMoodAnalyzer:
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                temperature=temperature,
+                temperature=prompt_temperature,
+                num_predict=max_tokens_prompt,
             )
 
         if generate_subject_prompt:
@@ -116,7 +152,8 @@ class AudioMoodAnalyzer:
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                temperature=temperature,
+                temperature=prompt_temperature,
+                num_predict=max_tokens_prompt,
             )
 
         if generate_merge_prompt:
@@ -129,7 +166,8 @@ class AudioMoodAnalyzer:
                     subject_prompt=subject_prompt,
                     custom_context=custom_context,
                 ),
-                temperature=temperature,
+                temperature=prompt_temperature,
+                num_predict=max_tokens_prompt,
             )
 
         return (
@@ -214,7 +252,7 @@ class AudioMoodAnalyzer:
 
         return result
 
-    def _ollama_generate(self, ollama_url, model, prompt, temperature):
+    def _ollama_generate(self, ollama_url, model, prompt, temperature, num_predict):
         response = requests.post(
             ollama_url,
             json={
@@ -222,7 +260,8 @@ class AudioMoodAnalyzer:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": temperature
+                    "temperature": temperature,
+                    "num_predict": num_predict
                 }
             },
             timeout=240,
@@ -427,58 +466,83 @@ Output only the final image-generation prompt.
 
         return f"Mood: {mood}\nEnergy: {energy}\nTension: {tension}"
 
-    def _build_subject_analysis_prompt(self, lyrics_or_text, custom_context):
+    def _build_subject_analysis_prompt(
+        self,
+        lyrics_or_text,
+        focus_fragment,
+        song_title,
+        custom_context
+    ):
         return f"""
-        You are an art director analyzing lyrics or poetic text to extract the HUMAN SUBJECT.
+    You are an art director analyzing lyrics or poetic text to extract the HUMAN SUBJECT.
 
-        Do not summarize the lyrics.
-        Do not quote the lyrics.
+    Do not summarize the lyrics.
+    Do not quote the lyrics.
+    Do not copy lines from the lyrics.
 
-        Additional creative context:
-        {custom_context}
+    Your goal is to infer a visually renderable human subject from emotional and symbolic material.
 
-        Lyrics or source text:
-        {lyrics_or_text}
+    Additional creative context:
+    {custom_context}
 
-        Return only valid JSON with this structure:
-        {{
-        "point_of_view": "",
-          "third_person_subject_description": "",
-          "visible_translation_of_inner_state": [],
-          "narrative_voice": "",
-          "subject_role": "",
-          "subject_psychology": [],
-          "emotional_conflict": [],
-          "posture": [],
-          "expression": [],
-          "eyes_and_face": [],
-          "body_language": [],
-          "symbolic_attributes": [],
-          "implied_motion": [],
-          "visual_distortions": [],
-          "avoid": []
-        }}
+    Song title:
+    {song_title}
 
-        Analyze the lyrics as emotional source material, then convert them into third-person visual subject design.
+    Full lyrics or source text:
+    {lyrics_or_text}
 
-        Do not quote the lyrics.
-        Do not summarize the song.
-        Do not copy lines from the lyrics.
-        Do not keep first-person phrasing.
+    Focus fragment:
+    {focus_fragment}
 
-        Extract only visual and psychological information useful to design a human subject for painterly image generation.
+    Use the song title as thematic and symbolic context.
+    The focus fragment is the PRIMARY emotional and visual anchor.
+    Use the rest of the lyrics only as secondary atmospheric context.
 
-        When the text says "I", infer a visible human subject:
-        - posture
-        - expression
-        - gaze
-        - body tension
-        - movement
-        - vulnerability
-        - symbolic attributes
+    If the source text is written in first person,
+    translate it into third-person visual language.
 
-        The final output must describe the subject from the outside, as something an image model can render.
-        """
+    Do not preserve the original point of view.
+
+    Convert internal emotions into visible external characteristics:
+    - posture
+    - expression
+    - gaze
+    - body tension
+    - movement
+    - symbolic attributes
+    - emotional pressure
+    - vulnerability
+    - psychological instability
+
+    Return only valid JSON with this structure:
+    {{
+    "narrative_voice": "",
+    "subject_role": "",
+    "third_person_subject_description": "",
+    "subject_psychology": [],
+    "emotional_conflict": [],
+    "posture": [],
+    "expression": [],
+    "eyes_and_face": [],
+    "body_language": [],
+    "symbolic_attributes": [],
+    "implied_motion": [],
+    "visible_translation_of_inner_state": [],
+    "visual_distortions": [],
+    "avoid": []
+    }}
+
+    Focus on emotional specificity rather than generic symbolism.
+
+    The final subject should feel:
+    - visually concrete
+    - emotionally vulnerable
+    - psychologically believable
+    - suitable for painterly image generation
+
+    Do not mention lyrics.
+    Do not quote the lyrics.
+    """
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer
