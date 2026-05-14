@@ -33,8 +33,6 @@ Restart ComfyUI. The node appears under **audio/analysis**.
 | `generate_environment_prompt` | BOOLEAN | Generate an environment-only image prompt |
 | `generate_subject_prompt` | BOOLEAN | Generate a subject-only image prompt |
 | `generate_merge_prompt` | BOOLEAN | Generate a merged final image prompt |
-| `max_tokens_analysis` | INT | Token budget for each analysis call (default: `512`) |
-| `max_tokens_prompt` | INT | Token budget for each prompt-generation call (default: `256`) |
 
 ## Outputs
 

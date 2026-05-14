@@ -56,19 +56,6 @@ class AudioMoodAnalyzer:
                 "generate_environment_prompt": ("BOOLEAN", {"default": True}),
                 "generate_subject_prompt": ("BOOLEAN", {"default": True}),
                 "generate_merge_prompt": ("BOOLEAN", {"default": True}),
-                "max_tokens_analysis": ("INT", {
-                    "default": 2048,
-                    "min": 64,
-                    "max": 8192,
-                    "step": 64
-                }),
-
-                "max_tokens_prompt": ("INT", {
-                    "default": 256,
-                    "min": 64,
-                    "max": 4096,
-                    "step": 64
-                }),
             }
         }
 
@@ -99,8 +86,6 @@ class AudioMoodAnalyzer:
         generate_environment_prompt,
         generate_subject_prompt,
         generate_merge_prompt,
-        max_tokens_analysis,
-        max_tokens_prompt,
     ):
         t0 = time.time()
         y, sr = self._audio_to_numpy(audio)
@@ -143,7 +128,7 @@ class AudioMoodAnalyzer:
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                prompt_temperature, max_tokens_prompt,
+                prompt_temperature,
             )
 
         if generate_subject_prompt:
@@ -153,7 +138,7 @@ class AudioMoodAnalyzer:
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                prompt_temperature, max_tokens_prompt,
+                prompt_temperature,
             )
 
         if generate_merge_prompt:
@@ -165,7 +150,7 @@ class AudioMoodAnalyzer:
                     subject_prompt=subject_prompt,
                     custom_context=custom_context,
                 ),
-                prompt_temperature, max_tokens_prompt,
+                prompt_temperature,
             )
 
         print(f"{_LOG} done  total: {time.time()-t0:.1f}s")
