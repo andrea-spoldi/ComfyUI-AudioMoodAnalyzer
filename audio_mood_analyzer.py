@@ -7,6 +7,10 @@ import librosa
 _LOG = "[AudioMoodAnalyzer]"
 
 
+def _fmt_json(obj):
+    return json.dumps(obj, indent=2, ensure_ascii=False)
+
+
 class AudioMoodAnalyzer:
     @classmethod
     def INPUT_TYPES(cls):
@@ -104,35 +108,25 @@ class AudioMoodAnalyzer:
         duration = features.get("duration_seconds", "?")
         print(f"{_LOG} audio: {duration}s  model: {model}")
 
-        mood_prompt = self._build_mood_prompt(features, custom_context)
-        print(f"{_LOG} ▶ mood analysis")
-        t = time.time()
-        raw_mood = self._ollama_generate(
-            ollama_url=ollama_url,
-            model=model,
-            prompt=mood_prompt,
-            temperature=analysis_temperature,
+        raw_mood = self._timed_generate(
+            "mood analysis", ollama_url, model,
+            self._build_mood_prompt(features, custom_context),
+            analysis_temperature, max_tokens_analysis,
         )
-        print(f"{_LOG} ✓ mood analysis  ({time.time()-t:.1f}s, {len(raw_mood)} chars)")
-
         mood_json = self._extract_json(raw_mood)
         subject_json = {}
 
         if lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip():
-            print(f"{_LOG} ▶ subject analysis")
-            t = time.time()
-            raw_subject = self._ollama_generate(
-                ollama_url=ollama_url,
-                model=model,
-                prompt=self._build_subject_analysis_prompt(
+            raw_subject = self._timed_generate(
+                "subject analysis", ollama_url, model,
+                self._build_subject_analysis_prompt(
                     lyrics_or_text=lyrics_or_text,
                     focus_fragment=focus_fragment,
                     custom_context=custom_context,
                     song_title=song_title,
                 ),
-                temperature=analysis_temperature,
+                analysis_temperature, max_tokens_analysis,
             )
-            print(f"{_LOG} ✓ subject analysis  ({time.time()-t:.1f}s, {len(raw_subject)} chars)")
             subject_json = self._extract_json(raw_subject)
 
         summary = self._build_summary(mood_json)
@@ -142,58 +136,43 @@ class AudioMoodAnalyzer:
         merge_prompt = ""
 
         if generate_environment_prompt:
-            print(f"{_LOG} ▶ environment prompt  (max_tokens={max_tokens_prompt})")
-            t = time.time()
-            environment_prompt = self._ollama_generate(
-                ollama_url=ollama_url,
-                model=model,
-                prompt=self._build_environment_prompt_request(
+            environment_prompt = self._timed_generate(
+                "environment prompt", ollama_url, model,
+                self._build_environment_prompt_request(
                     mood_json=mood_json,
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                temperature=prompt_temperature,
-                num_predict=max_tokens_prompt,
+                prompt_temperature, max_tokens_prompt,
             )
-            print(f"{_LOG} ✓ environment prompt  ({time.time()-t:.1f}s, {len(environment_prompt)} chars)")
 
         if generate_subject_prompt:
-            print(f"{_LOG} ▶ subject prompt  (max_tokens={max_tokens_prompt})")
-            t = time.time()
-            subject_prompt = self._ollama_generate(
-                ollama_url=ollama_url,
-                model=model,
-                prompt=self._build_subject_prompt_request(
+            subject_prompt = self._timed_generate(
+                "subject prompt", ollama_url, model,
+                self._build_subject_prompt_request(
                     subject_json=subject_json,
                     custom_context=custom_context,
                 ),
-                temperature=prompt_temperature,
-                num_predict=max_tokens_prompt,
+                prompt_temperature, max_tokens_prompt,
             )
-            print(f"{_LOG} ✓ subject prompt  ({time.time()-t:.1f}s, {len(subject_prompt)} chars)")
 
         if generate_merge_prompt:
-            print(f"{_LOG} ▶ merge prompt  (max_tokens={max_tokens_prompt})")
-            t = time.time()
-            merge_prompt = self._ollama_generate(
-                ollama_url=ollama_url,
-                model=model,
-                prompt=self._build_merge_prompt_request(
+            merge_prompt = self._timed_generate(
+                "merge prompt", ollama_url, model,
+                self._build_merge_prompt_request(
                     mood_json=mood_json,
                     environment_prompt=environment_prompt,
                     subject_prompt=subject_prompt,
                     custom_context=custom_context,
                 ),
-                temperature=prompt_temperature,
-                num_predict=max_tokens_prompt,
+                prompt_temperature, max_tokens_prompt,
             )
-            print(f"{_LOG} ✓ merge prompt  ({time.time()-t:.1f}s, {len(merge_prompt)} chars)")
 
         print(f"{_LOG} done  total: {time.time()-t0:.1f}s")
 
         return (
-            json.dumps(mood_json, indent=2, ensure_ascii=False),
-            json.dumps(subject_json, indent=2, ensure_ascii=False),
+            _fmt_json(mood_json),
+            _fmt_json(subject_json),
             environment_prompt,
             subject_prompt,
             merge_prompt,
@@ -214,10 +193,7 @@ class AudioMoodAnalyzer:
 
         y = np.asarray(y)
 
-        # Common ComfyUI AUDIO shapes:
-        # [batch, channels, samples]
-        # [channels, samples]
-        # [samples]
+        # ComfyUI AUDIO may arrive as [batch, channels, samples], [channels, samples], or [samples]
         if y.ndim == 3:
             y = y[0]
 
@@ -242,14 +218,17 @@ class AudioMoodAnalyzer:
 
         sections = self._section_energy(y, sections=8)
 
+        rms_max = float(np.max(rms))
+        rms_min = float(np.min(rms))
+
         return {
             "duration_seconds": round(float(duration), 2),
             "tempo_bpm": round(float(np.asarray(tempo).item()), 2),
             "beat_count": int(len(beats)),
             "rms_energy_mean": round(float(np.mean(rms)), 5),
-            "rms_energy_max": round(float(np.max(rms)), 5),
-            "rms_energy_min": round(float(np.min(rms)), 5),
-            "dynamic_range": round(float(np.max(rms) - np.min(rms)), 5),
+            "rms_energy_max": round(rms_max, 5),
+            "rms_energy_min": round(rms_min, 5),
+            "dynamic_range": round(rms_max - rms_min, 5),
             "brightness_mean_spectral_centroid": round(float(np.mean(centroid)), 2),
             "brightness_max_spectral_centroid": round(float(np.max(centroid)), 2),
             "spectral_bandwidth_mean": round(float(np.mean(bandwidth)), 2),
@@ -271,6 +250,14 @@ class AudioMoodAnalyzer:
                 "energy_peak": round(float(np.max(rms)), 5),
             })
 
+        return result
+
+    def _timed_generate(self, label, ollama_url, model, prompt, temperature, num_predict=-1):
+        tok_info = f"  (max_tokens={num_predict})" if num_predict != -1 else ""
+        print(f"{_LOG} ▶ {label}{tok_info}")
+        t = time.time()
+        result = self._ollama_generate(ollama_url, model, prompt, temperature, num_predict)
+        print(f"{_LOG} ✓ {label}  ({time.time()-t:.1f}s, {len(result)} chars)")
         return result
 
     def _ollama_generate(self, ollama_url, model, prompt, temperature, num_predict=-1):
@@ -308,7 +295,7 @@ Additional creative context:
 {custom_context}
 
 Audio features:
-{json.dumps(features, indent=2)}
+{_fmt_json(features)}
 
 Transform these audio features into a visual mood sheet for image generation.
 
@@ -340,10 +327,10 @@ Do not quote the song.
     You are an art director creating an environment-only image-generation prompt.
 
     Use the sonic mood analysis as the main source:
-    {json.dumps(mood_json, indent=2, ensure_ascii=False)}
+    {_fmt_json(mood_json)}
 
     Use the lyrical subject analysis only as subtle atmospheric influence:
-    {json.dumps(subject_json, indent=2, ensure_ascii=False)}
+    {_fmt_json(subject_json)}
 
     Additional creative context:
     {custom_context}
@@ -379,7 +366,7 @@ Do not quote the song.
 You are an art director creating a subject-only image-generation prompt.
 
 Use the following subject analysis extracted from lyrics or poetic text:
-{json.dumps(subject_json, indent=2, ensure_ascii=False)}
+{_fmt_json(subject_json)}
 
 Additional creative context:
 {custom_context}
@@ -430,7 +417,7 @@ You are an art director merging an environment prompt and a subject prompt
 into one coherent final image-generation prompt.
 
 Sonic mood analysis:
-{json.dumps(mood_json, indent=2, ensure_ascii=False)}
+{_fmt_json(mood_json)}
 
 Environment prompt:
 {environment_prompt}
