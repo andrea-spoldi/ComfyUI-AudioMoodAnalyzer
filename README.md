@@ -110,6 +110,37 @@ The Advanced node exposes five optional **prompt template override** fields — 
 
 Use standard Python `{variable_name}` placeholders. If a variable name is not recognised, the node logs a warning and falls back to the built-in template for that call.
 
+## Audio Mood Analyzer (Timeline)
+
+Divides audio into N equal segments and runs the full analysis + generation pipeline on each. Designed for image sequence and video generation workflows.
+
+### Additional input
+
+| Name | Type | Description |
+|------|------|-------------|
+| `n_segments` | INT | Number of equal time segments to analyse (default: 8, range: 2–32) |
+
+All other inputs are identical to the standard node.
+
+### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `prompt_sequence_json` | STRING | JSON array — one object per segment containing `segment`, `start_s`, `end_s`, `mood_json`, `environment_prompt`, `subject_prompt`, `merge_prompt` |
+| `merge_prompts` | STRING | Merge prompts only, newline-separated — one per segment |
+| `environment_prompts` | STRING | Environment prompts only, newline-separated — one per segment |
+| `subject_prompt` | STRING | Single shared subject prompt (computed once from lyrics, same across all segments) |
+
+### Pipeline
+
+Subject analysis runs **once** from lyrics/text. Mood analysis and prompt generation run **per segment**. At `n_segments=8`: up to 26 Ollama calls total.
+
+`merge_prompts` is the most useful output for image batch nodes. `prompt_sequence_json` feeds the AnimateDiff formatter (see upcoming T-006 node).
+
+### Sample workflow
+
+`example_workflow/example_timeline.json` — shows the timeline node with all outputs displayed, and `merge_prompts` wired into a single-image sanity-check generation. Full per-frame image sequences require the AnimateDiff formatter node (T-006).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
