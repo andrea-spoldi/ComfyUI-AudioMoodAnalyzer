@@ -6,25 +6,15 @@
   "updated": "2026-05-16",
 
   "current_session": {
-    "id": "S-003",
-    "goal": "Add OllamaModelSelector (T-004) and AudioMoodAnalyzerTimeline (T-005)",
-    "task_ref": "T-005",
+    "id": "S-004",
+    "goal": "Add AnimateDiffScheduleFormatter (T-006)",
+    "task_ref": "T-006",
     "started": "2026-05-16",
     "status": "done",
     "blocker": null
   },
 
-  "backlog": [
-    {
-      "id": "T-006",
-      "title": "AnimateDiff prompt schedule formatter",
-      "description": "New node (or additional output on AudioMoodAnalyzerTimeline) that takes the prompt_sequence_json output and formats it as an AnimateDiff per-frame schedule string: '\"0\": \"...\", \"8\": \"...\"'. Parameters: total_frames (INT), fps (INT, for timing alignment). Depends on T-005.",
-      "size": "M",
-      "priority": 1,
-      "status": "pending",
-      "tags": ["feature", "video", "animatediff"]
-    }
-  ],
+  "backlog": [],
 
   "decisions": [
     {
@@ -38,7 +28,7 @@
       "id": "D-002",
       "date": "2026-05-16",
       "decision": "custom_context is scoped to analysis prompts only; generation prompts use style_preset + style_notes instead",
-      "rationale": "Analysis needs objectivity. Generation needs aesthetic direction. One field for both created friction.",
+      "rationale": "Analysis needs objectivity. Generation needs aesthetic direction.",
       "supersedes": null
     },
     {
@@ -66,7 +56,14 @@
       "id": "D-006",
       "date": "2026-05-16",
       "decision": "AudioMoodAnalyzerTimeline runs subject analysis once (shared across segments); mood + env + merge run per segment",
-      "rationale": "Subject (lyrics-driven) doesn't change with audio segment. Environment (sonic-driven) does. Avoids redundant calls.",
+      "rationale": "Subject (lyrics-driven) doesn't change with audio segment. Environment (sonic-driven) does.",
+      "supersedes": null
+    },
+    {
+      "id": "D-007",
+      "date": "2026-05-16",
+      "decision": "AnimateDiffScheduleFormatter uses proportional frame mapping (start_s / total_duration × total_frames), not fps-based",
+      "rationale": "Proportional mapping works regardless of song length or fps setting. fps is an AnimateDiff-side parameter.",
       "supersedes": null
     }
   ],
@@ -91,31 +88,32 @@
       "title": "Option C: AudioMoodAnalyzerAdvanced — full template overrides",
       "completed_date": "2026-05-16",
       "session_ref": "S-002",
-      "notes": "5 optional override fields via format_map with fallback. Thread-safe lock. 11 tests."
+      "notes": "5 optional override fields via format_map with fallback. Thread-safe lock."
     },
     {
       "id": "T-004",
       "title": "OllamaModelSelector utility node",
       "completed_date": "2026-05-16",
       "session_ref": "S-003",
-      "notes": "Queries /api/tags. Returns models_list (newline-separated) and first_model. Graceful error handling. 5 tests."
+      "notes": "Queries /api/tags. Returns models_list and first_model. 5 tests."
     },
     {
       "id": "T-005",
       "title": "AudioMoodAnalyzerTimeline — per-segment prompt sequence",
       "completed_date": "2026-05-16",
       "session_ref": "S-003",
-      "notes": "N equal segments. Subject once. Mood+env+merge per segment. 4 outputs: prompt_sequence_json, merge_prompts, environment_prompts, subject_prompt. 16 tests. example_timeline.json + README section."
+      "notes": "N equal segments. Subject once. Mood+env+merge per segment. 4 outputs. 16 tests. example_timeline.json + README."
+    },
+    {
+      "id": "T-006",
+      "title": "AnimateDiffScheduleFormatter — ADE prompt travel schedule",
+      "completed_date": "2026-05-16",
+      "session_ref": "S-004",
+      "notes": "Proportional frame mapping. Newline sanitisation in prompts. 11 tests. example_animatediff.json + README."
     }
   ]
 }
 ```
-
-## Backlog
-
-| ID | Title | Size | Priority | Status |
-|----|-------|------|----------|--------|
-| T-006 | AnimateDiff prompt schedule formatter | M | 1 | pending |
 
 ## Completed
 
@@ -126,7 +124,8 @@
 | T-003 | Option C: AudioMoodAnalyzerAdvanced | 2026-05-16 | S-002 |
 | T-004 | OllamaModelSelector utility node | 2026-05-16 | S-003 |
 | T-005 | AudioMoodAnalyzerTimeline | 2026-05-16 | S-003 |
+| T-006 | AnimateDiffScheduleFormatter | 2026-05-16 | S-004 |
 
 ## Current Session
 
-**S-003** — done
+**S-004** — done. Backlog empty.
