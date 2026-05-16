@@ -30,7 +30,7 @@ audio
   environment_prompt / subject_prompt / merge_prompt
 ```
 
-Librosa and CLAP run independently and feed their results into a single LLM analysis call. That call produces structured mood data, which then drives up to three prompt-generation calls — one for environment, one for human subject, one merged final prompt.
+CLAP is optional — the pipeline runs without it. When present, its semantic anchors and the librosa features both reach the LLM in a single analysis call, which produces structured mood data used to drive up to three prompt-generation calls: environment, subject, and merged final.
 
 ---
 
@@ -107,7 +107,7 @@ These fields control the aesthetic output of the three image-generation prompts.
 
 ### Audio Mood Analyzer (Advanced)
 
-Identical to the base node, plus five optional prompt template override fields — one for each internal Ollama call. Leave a field empty to use the built-in template; provide a value to replace it entirely.
+Identical to the base node (all inputs and outputs from the standard node apply), plus five optional prompt template override fields — one for each internal Ollama call. Leave a field empty to use the built-in template; provide a value to replace it entirely.
 
 | Override field | Replaces | Available template variables |
 |----------------|----------|------------------------------|
@@ -142,7 +142,7 @@ All other inputs are identical to the standard node.
 | `environment_prompts` | STRING | Environment prompts only, newline-separated — one per segment |
 | `subject_prompt` | STRING | Single shared subject prompt (computed once from lyrics, same across all segments) |
 
-At `n_segments=8`: up to 26 Ollama calls total. `merge_prompts` is the most useful output for image batch nodes. `prompt_sequence_json` feeds the AnimateDiff Schedule Formatter.
+At `n_segments=8` with all toggles on: up to 26 Ollama calls total (2 shared subject calls + 3 per-segment calls × 8 segments). `merge_prompts` is the most useful output for image batch nodes. `prompt_sequence_json` feeds the AnimateDiff Schedule Formatter.
 
 ---
 
@@ -199,7 +199,9 @@ Default anchors (15 phrases): dark atmospheric tension, melancholic isolation, a
 | `clap_json` | STRING | Full JSON — model name, embedding norm, ranked matches, top-3 inference |
 | `semantic_summary` | STRING | `"CLAP: anchor1, anchor2, anchor3"` — wire into `AudioMoodAnalyzer.custom_context` |
 
-The model is loaded once per session and cached by (model_name, device). On error, `semantic_summary` returns `""` and the workflow continues.
+Wiring `semantic_summary` into `AudioMoodAnalyzer.custom_context` injects the top-3 anchor phrases into the LLM's mood analysis prompt as named emotional vocabulary — the same "semantic pressure" mechanism described above, but sourced from the audio embedding rather than typed by hand.
+
+The model is loaded once per ComfyUI session (the Python process lifetime, not per workflow run) and cached by (model_name, device) — changing the device mid-session has no effect until ComfyUI restarts. On error, `semantic_summary` returns `""` and the workflow continues.
 
 ---
 
