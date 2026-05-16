@@ -1,6 +1,6 @@
 # fear-of-the-art: Audio Analyzer
 
-A ComfyUI custom node project that extracts sonic features from audio and uses a local Ollama LLM to generate painterly, emotionally-driven image-generation prompts. It is an experiment in taking audio seriously as a source of visual instruction — not just as a trigger, but as something that carries meaning worth listening to. The project is intentionally experimental: results vary, some outputs will surprise you, and that is part of the point.
+A ComfyUI custom node project that extracts sonic features from audio and uses a local Ollama LLM to generate painterly, emotionally-driven image-generation prompts. It is an experiment in taking audio seriously as a source of visual instruction — not just as a trigger, but as something that carries meaning worth listening to. Acoustic analysis via librosa describes what the audio does physically; optional CLAP embeddings describe what it feels like semantically; a local language model translates both into image-generation prose. The project is intentionally experimental: results vary, some outputs will surprise you, and that is part of the point.
 
 ---
 
