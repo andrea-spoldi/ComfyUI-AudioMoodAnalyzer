@@ -6,6 +6,37 @@ import librosa
 
 _LOG = "[AudioMoodAnalyzer]"
 
+STYLE_PRESETS = {
+    "painterly": (
+        "Target aesthetic: oil painting, raw expressive brushwork, emotionally loaded colour, "
+        "controlled distortion. Reference painters: Francis Bacon, Egon Schiele, Lucian Freud. "
+        "Avoid photorealism, digital gloss, and smooth gradients."
+    ),
+    "cinematic": (
+        "Target aesthetic: wide cinematic frame, dramatic directional lighting, atmospheric haze, "
+        "filmic grain and restrained desaturation. Reference directors: Tarkovsky, Wong Kar-wai, "
+        "Villeneuve. Avoid flat lighting, TV aesthetics, and oversaturated colour."
+    ),
+    "raw": (
+        "Target aesthetic: immediate, visceral, lo-fi. Grainy, desaturated, imperfect, "
+        "documentary-adjacent. No production value. Avoid polish, glamour, and beauty lighting."
+    ),
+    "abstract": (
+        "Target aesthetic: non-representational, gestural abstraction, colour field, "
+        "mark-making as pure emotion. Reference: Rothko, Kiefer, Twombly. "
+        "Avoid literal depiction of subjects or recognisable scenes."
+    ),
+    "custom": "",
+}
+
+
+def _build_style_block(style_preset: str, style_notes: str) -> str:
+    base = STYLE_PRESETS.get(style_preset, "")
+    notes = style_notes.strip()
+    if base and notes:
+        return f"{base}\n{notes}"
+    return notes if notes else base
+
 
 def _fmt_json(obj):
     return json.dumps(obj, indent=2, ensure_ascii=False)
