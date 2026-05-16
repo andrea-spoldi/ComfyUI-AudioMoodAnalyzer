@@ -180,3 +180,18 @@ def test_subject_prompt_repeated_in_each_segment():
         segments = json.loads(seq_json)
         for seg in segments:
             assert seg["subject_prompt"] == subject_prompt
+
+
+def test_last_segment_end_matches_audio_duration():
+    seq_json, _, _, _ = run_timeline(n_segments=3)
+    segments = json.loads(seq_json)
+    sr = 44100
+    expected_end = round(len(DUMMY_Y) / sr, 2)
+    assert segments[-1]["end_s"] == expected_end
+
+
+def test_generate_subject_prompt_false_gives_empty_even_with_lyrics():
+    _, _, _, subject_prompt = run_timeline(
+        n_segments=2, lyrics="some lyrics", generate_subject_prompt=False
+    )
+    assert subject_prompt == ""
