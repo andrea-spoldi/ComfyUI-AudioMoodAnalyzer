@@ -2,3 +2,4 @@ librosa
 soundfile
 numpy
 requests
+transformers>=4.35.0
