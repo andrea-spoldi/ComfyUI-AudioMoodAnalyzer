@@ -671,6 +671,115 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
     FUNCTION = "analyze"
     CATEGORY = "audio/analysis"
 
+    def _render_override(self, template: str, context: dict, label: str) -> str | None:
+        if not template.strip():
+            return None
+        try:
+            return template.format_map(context)
+        except (KeyError, ValueError) as exc:
+            print(f"{_LOG} ⚠ {label} override render failed ({exc}); using built-in template")
+            return None
+
+    def _build_mood_prompt(self, features, custom_context, mood_prompt_override="", **kwargs):
+        rendered = self._render_override(
+            mood_prompt_override,
+            {
+                "features": _fmt_json(features),
+                "custom_context": custom_context,
+                "style_block": kwargs.get("style_block", ""),
+            },
+            "mood_prompt",
+        )
+        return rendered if rendered is not None else super()._build_mood_prompt(features, custom_context)
+
+    def _build_subject_analysis_prompt(
+        self,
+        lyrics_or_text,
+        focus_fragment,
+        song_title,
+        custom_context,
+        song_description="",
+        song_genre="",
+        subject_analysis_prompt_override="",
+    ):
+        rendered = self._render_override(
+            subject_analysis_prompt_override,
+            {
+                "lyrics_or_text": lyrics_or_text,
+                "focus_fragment": focus_fragment,
+                "song_title": song_title,
+                "song_description": song_description,
+                "song_genre": song_genre,
+                "custom_context": custom_context,
+            },
+            "subject_analysis_prompt",
+        )
+        return rendered if rendered is not None else super()._build_subject_analysis_prompt(
+            lyrics_or_text=lyrics_or_text,
+            focus_fragment=focus_fragment,
+            song_title=song_title,
+            custom_context=custom_context,
+            song_description=song_description,
+            song_genre=song_genre,
+        )
+
+    def _build_environment_prompt_request(
+        self, mood_json, subject_json, style_block, environment_prompt_override=""
+    ):
+        rendered = self._render_override(
+            environment_prompt_override,
+            {
+                "mood_json": _fmt_json(mood_json),
+                "subject_json": _fmt_json(subject_json),
+                "style_block": style_block,
+            },
+            "environment_prompt",
+        )
+        return rendered if rendered is not None else super()._build_environment_prompt_request(
+            mood_json=mood_json,
+            subject_json=subject_json,
+            style_block=style_block,
+        )
+
+    def _build_subject_prompt_request(self, subject_json, style_block, subject_prompt_override=""):
+        rendered = self._render_override(
+            subject_prompt_override,
+            {
+                "subject_json": _fmt_json(subject_json),
+                "style_block": style_block,
+            },
+            "subject_prompt",
+        )
+        return rendered if rendered is not None else super()._build_subject_prompt_request(
+            subject_json=subject_json,
+            style_block=style_block,
+        )
+
+    def _build_merge_prompt_request(
+        self,
+        mood_summary,
+        environment_prompt,
+        subject_prompt,
+        style_block,
+        merge_prompt_override="",
+    ):
+        rendered = self._render_override(
+            merge_prompt_override,
+            {
+                "mood_summary": mood_summary,
+                "environment_prompt": environment_prompt,
+                "subject_prompt": subject_prompt,
+                "style_block": style_block,
+            },
+            "merge_prompt",
+        )
+        return rendered if rendered is not None else super()._build_merge_prompt_request(
+            mood_summary=mood_summary,
+            environment_prompt=environment_prompt,
+            subject_prompt=subject_prompt,
+            style_block=style_block,
+        )
+
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
