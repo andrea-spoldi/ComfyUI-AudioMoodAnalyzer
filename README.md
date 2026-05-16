@@ -141,6 +141,39 @@ Subject analysis runs **once** from lyrics/text. Mood analysis and prompt genera
 
 `example_workflow/example_timeline.json` — shows the timeline node with all outputs displayed, and `merge_prompts` wired into a single-image sanity-check generation. Full per-frame image sequences require the AnimateDiff formatter node (T-006).
 
+## AnimateDiff Schedule Formatter
+
+Converts `AudioMoodAnalyzerTimeline`'s `prompt_sequence_json` output into an AnimateDiff Evolved (ADE) prompt travel schedule string. Each audio segment is proportionally mapped to a frame number within the AnimateDiff frame range.
+
+### Inputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `prompt_sequence_json` | STRING | JSON array from `Audio Mood Analyzer (Timeline)` |
+| `total_frames` | INT | Must match the AnimateDiff frame count setting (default: 64, range: 8–256) |
+| `prompt_type` | COMBO | Which prompt to use per segment: `merge_prompt` (default), `environment_prompt`, or `subject_prompt` |
+
+### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `schedule` | STRING | ADE prompt travel schedule — wire into an AnimateDiff Evolved prompt scheduling node |
+| `first_frame_prompt` | STRING | Prompt for frame 0 — wire into a standard `CLIPTextEncode` as fallback positive conditioning |
+
+### Output format
+
+```
+"0": "dark wasteland, crumbling concrete",
+"8": "burning field, ash and smoke",
+"16": "flooded ruin, grey water",
+```
+
+Frame numbers are derived proportionally: `frame = round(start_s / total_duration × total_frames)`. Empty prompts (if Ollama failed for a segment) are omitted. When two segments map to the same frame, the later segment's prompt wins.
+
+### Sample workflow
+
+`example_workflow/example_animatediff.json` — shows the full pipeline: `LoadAudio` → `AudioMoodAnalyzerTimeline` → `AnimateDiffScheduleFormatter` → schedule preview + single-image sanity check using `first_frame_prompt`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
