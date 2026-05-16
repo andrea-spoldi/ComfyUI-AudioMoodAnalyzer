@@ -6,15 +6,32 @@
   "updated": "2026-05-16",
 
   "current_session": {
-    "id": "S-004",
-    "goal": "Add AnimateDiffScheduleFormatter (T-006)",
-    "task_ref": "T-006",
+    "id": "S-005",
+    "goal": "CLAP node + README refinement (T-007, T-008)",
+    "task_ref": "T-007",
     "started": "2026-05-16",
-    "status": "done",
+    "status": "in-progress",
     "blocker": null
   },
 
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "T-007",
+      "title": "ClapAudioAnalyzer — standalone CLAP semantic embedding node",
+      "size": "M",
+      "spec": "docs/superpowers/specs/2026-05-16-clap-node-design.md",
+      "plan": "docs/superpowers/plans/2026-05-16-clap-node.md",
+      "notes": "Option A — zero changes to existing nodes. semantic_summary → custom_context via Text Concatenate."
+    },
+    {
+      "id": "T-008",
+      "title": "README refinement — philosophy, intent, experimental framing",
+      "size": "S",
+      "spec": "docs/superpowers/specs/2026-05-16-readme-refinement-design.md",
+      "plan": "docs/superpowers/plans/2026-05-16-readme-refinement.md",
+      "notes": "Lead with the idea, not the features. Add CLAP + OllamaModelSelector docs. Honest about experimental nature."
+    }
+  ],
 
   "decisions": [
     {
@@ -64,6 +81,13 @@
       "date": "2026-05-16",
       "decision": "AnimateDiffScheduleFormatter uses proportional frame mapping (start_s / total_duration × total_frames), not fps-based",
       "rationale": "Proportional mapping works regardless of song length or fps setting. fps is an AnimateDiff-side parameter.",
+      "supersedes": null
+    },
+    {
+      "id": "D-008",
+      "date": "2026-05-16",
+      "decision": "CLAP integration is Option A — completely standalone ClapAudioAnalyzer node, zero changes to existing nodes",
+      "rationale": "Adding clap_json as an output to AudioMoodAnalyzer would shift output slot indices and break existing wired workflows.",
       "supersedes": null
     }
   ],
@@ -126,6 +150,13 @@
 | T-005 | AudioMoodAnalyzerTimeline | 2026-05-16 | S-003 |
 | T-006 | AnimateDiffScheduleFormatter | 2026-05-16 | S-004 |
 
+## Backlog
+
+| ID | Title | Size |
+|----|-------|------|
+| T-007 | ClapAudioAnalyzer — standalone CLAP semantic embedding node | M |
+| T-008 | README refinement — philosophy, intent, experimental framing | S |
+
 ## Current Session
 
-**S-004** — done. Backlog empty.
+**S-005** — in progress. T-007 (ClapAudioAnalyzer) + T-008 (README refinement). Specs + plans written and committed.
