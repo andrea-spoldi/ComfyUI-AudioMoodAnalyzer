@@ -854,14 +854,37 @@ class OllamaModelSelector:
             return (msg, "")
 
 
+class AudioMoodAnalyzerTimeline(AudioMoodAnalyzer):
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        parent = super().INPUT_TYPES()
+        required = {}
+        for k, v in parent["required"].items():
+            if k == "generate_environment_prompt":
+                required["n_segments"] = ("INT", {
+                    "default": 8, "min": 2, "max": 32, "step": 1
+                })
+            required[k] = v
+        parent["required"] = required
+        return parent
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("prompt_sequence_json", "merge_prompts", "environment_prompts", "subject_prompt")
+    FUNCTION = "analyze_timeline"
+    CATEGORY = "audio/analysis"
+
+
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
     "AudioMoodAnalyzerAdvanced": AudioMoodAnalyzerAdvanced,
+    "AudioMoodAnalyzerTimeline": AudioMoodAnalyzerTimeline,
     "OllamaModelSelector": OllamaModelSelector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AudioMoodAnalyzer": "Audio Mood Analyzer",
     "AudioMoodAnalyzerAdvanced": "Audio Mood Analyzer (Advanced)",
+    "AudioMoodAnalyzerTimeline": "Audio Mood Analyzer (Timeline)",
     "OllamaModelSelector": "Ollama Model Selector",
 }
