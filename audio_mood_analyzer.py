@@ -874,6 +874,124 @@ class AudioMoodAnalyzerTimeline(AudioMoodAnalyzer):
     FUNCTION = "analyze_timeline"
     CATEGORY = "audio/analysis"
 
+    def analyze_timeline(
+        self,
+        audio,
+        ollama_url,
+        model,
+        analysis_temperature,
+        prompt_temperature,
+        custom_context,
+        lyrics_or_text,
+        focus_fragment,
+        song_title,
+        song_description,
+        song_genre,
+        style_preset,
+        style_notes,
+        n_segments,
+        generate_environment_prompt,
+        generate_subject_prompt,
+        generate_merge_prompt,
+    ):
+        t0 = time.time()
+        y, sr = self._audio_to_numpy(audio)
+        style_block = _build_style_block(style_preset, style_notes)
+        total_samples = len(y)
+        seg_samples = total_samples // n_segments
+
+        print(f"{_LOG} timeline: {n_segments} segments  "
+              f"{round(total_samples / sr, 1)}s  model: {model}")
+
+        # Subject analysis — once, shared across all segments
+        subject_json = {}
+        subject_prompt_str = ""
+        has_subject_data = (
+            lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip()
+            or song_description.strip() or song_genre.strip()
+        )
+        if has_subject_data:
+            raw_subject = self._timed_generate(
+                "subject analysis", ollama_url, model,
+                self._build_subject_analysis_prompt(
+                    lyrics_or_text=lyrics_or_text,
+                    focus_fragment=focus_fragment,
+                    song_title=song_title,
+                    custom_context=custom_context,
+                    song_description=song_description,
+                    song_genre=song_genre,
+                ),
+                analysis_temperature,
+            )
+            subject_json = self._extract_json(raw_subject)
+            if generate_subject_prompt and subject_json and "error" not in subject_json:
+                subject_prompt_str = self._timed_generate(
+                    "subject prompt", ollama_url, model,
+                    self._build_subject_prompt_request(subject_json, style_block),
+                    prompt_temperature,
+                )
+
+        segments = []
+        for i in range(n_segments):
+            start = i * seg_samples
+            end = (i + 1) * seg_samples if i < n_segments - 1 else total_samples
+            y_seg = y[start:end]
+            start_s = round(start / sr, 2)
+            end_s = round(end / sr, 2)
+
+            features = self._extract_features(y_seg, sr)
+
+            raw_mood = self._timed_generate(
+                f"mood analysis [seg {i + 1}/{n_segments}]", ollama_url, model,
+                self._build_mood_prompt(features, custom_context),
+                analysis_temperature,
+            )
+            mood_json = self._extract_json(raw_mood)
+            mood_summary = self._build_summary(mood_json)
+
+            environment_prompt = ""
+            if generate_environment_prompt:
+                try:
+                    environment_prompt = self._timed_generate(
+                        f"environment prompt [seg {i + 1}/{n_segments}]", ollama_url, model,
+                        self._build_environment_prompt_request(mood_json, subject_json, style_block),
+                        prompt_temperature,
+                    )
+                except Exception as exc:
+                    print(f"{_LOG} ⚠ environment prompt seg {i + 1} failed: {exc}")
+
+            merge_prompt = ""
+            if generate_merge_prompt:
+                try:
+                    merge_prompt = self._timed_generate(
+                        f"merge prompt [seg {i + 1}/{n_segments}]", ollama_url, model,
+                        self._build_merge_prompt_request(
+                            mood_summary, environment_prompt, subject_prompt_str, style_block
+                        ),
+                        prompt_temperature,
+                    )
+                except Exception as exc:
+                    print(f"{_LOG} ⚠ merge prompt seg {i + 1} failed: {exc}")
+
+            segments.append({
+                "segment": i + 1,
+                "start_s": start_s,
+                "end_s": end_s,
+                "mood_json": mood_json,
+                "environment_prompt": environment_prompt,
+                "subject_prompt": subject_prompt_str,
+                "merge_prompt": merge_prompt,
+            })
+
+        print(f"{_LOG} timeline done  total: {time.time() - t0:.1f}s")
+
+        return (
+            json.dumps(segments, indent=2, ensure_ascii=False),
+            "\n".join(s["merge_prompt"] for s in segments),
+            "\n".join(s["environment_prompt"] for s in segments),
+            subject_prompt_str,
+        )
+
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
