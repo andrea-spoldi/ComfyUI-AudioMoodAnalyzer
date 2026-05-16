@@ -181,7 +181,7 @@ class AudioMoodAnalyzer:
                 self._build_environment_prompt_request(
                     mood_json=mood_json,
                     subject_json=subject_json,
-                    custom_context=custom_context,
+                    style_block=style_block,
                 ),
                 prompt_temperature,
             )
@@ -192,7 +192,7 @@ class AudioMoodAnalyzer:
                     "subject prompt", ollama_url, model,
                     self._build_subject_prompt_request(
                         subject_json=subject_json,
-                        custom_context=custom_context,
+                        style_block=style_block,
                     ),
                     prompt_temperature,
                 )
@@ -203,10 +203,10 @@ class AudioMoodAnalyzer:
             merge_prompt = self._timed_generate(
                 "merge prompt", ollama_url, model,
                 self._build_merge_prompt_request(
-                    mood_json=mood_json,
+                    mood_summary=summary,
                     environment_prompt=environment_prompt,
                     subject_prompt=subject_prompt,
-                    custom_context=custom_context,
+                    style_block=style_block,
                 ),
                 prompt_temperature,
             )
