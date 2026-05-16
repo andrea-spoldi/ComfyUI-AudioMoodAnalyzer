@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 import requests
 import numpy as np
@@ -619,9 +620,12 @@ Do not include any text before or after the JSON.
 class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
     """AudioMoodAnalyzer with optional full prompt template overrides."""
 
+    def __init__(self):
+        self._analyze_lock = threading.Lock()
+
     @classmethod
     def INPUT_TYPES(cls):
-        base = super().INPUT_TYPES()
+        base = dict(super().INPUT_TYPES())
         base["optional"] = {
             "mood_prompt_override": ("STRING", {
                 "multiline": True,
@@ -704,30 +708,31 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
         subject_prompt_override="",
         merge_prompt_override="",
     ):
-        self._style_block = _build_style_block(style_preset, style_notes)
-        self._mood_prompt_override = mood_prompt_override
-        self._subject_analysis_prompt_override = subject_analysis_prompt_override
-        self._environment_prompt_override = environment_prompt_override
-        self._subject_prompt_override = subject_prompt_override
-        self._merge_prompt_override = merge_prompt_override
-        return super().analyze(
-            audio=audio,
-            ollama_url=ollama_url,
-            model=model,
-            analysis_temperature=analysis_temperature,
-            prompt_temperature=prompt_temperature,
-            custom_context=custom_context,
-            lyrics_or_text=lyrics_or_text,
-            focus_fragment=focus_fragment,
-            song_title=song_title,
-            song_description=song_description,
-            song_genre=song_genre,
-            style_preset=style_preset,
-            style_notes=style_notes,
-            generate_environment_prompt=generate_environment_prompt,
-            generate_subject_prompt=generate_subject_prompt,
-            generate_merge_prompt=generate_merge_prompt,
-        )
+        with self._analyze_lock:
+            self._style_block = _build_style_block(style_preset, style_notes)
+            self._mood_prompt_override = mood_prompt_override
+            self._subject_analysis_prompt_override = subject_analysis_prompt_override
+            self._environment_prompt_override = environment_prompt_override
+            self._subject_prompt_override = subject_prompt_override
+            self._merge_prompt_override = merge_prompt_override
+            return super().analyze(
+                audio=audio,
+                ollama_url=ollama_url,
+                model=model,
+                analysis_temperature=analysis_temperature,
+                prompt_temperature=prompt_temperature,
+                custom_context=custom_context,
+                lyrics_or_text=lyrics_or_text,
+                focus_fragment=focus_fragment,
+                song_title=song_title,
+                song_description=song_description,
+                song_genre=song_genre,
+                style_preset=style_preset,
+                style_notes=style_notes,
+                generate_environment_prompt=generate_environment_prompt,
+                generate_subject_prompt=generate_subject_prompt,
+                generate_merge_prompt=generate_merge_prompt,
+            )
 
     def _build_mood_prompt(self, features, custom_context):
         rendered = self._render_override(
