@@ -680,13 +680,62 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
             print(f"{_LOG} ⚠ {label} override render failed ({exc}); using built-in template")
             return None
 
-    def _build_mood_prompt(self, features, custom_context, mood_prompt_override="", **kwargs):
+    def analyze(
+        self,
+        audio,
+        ollama_url,
+        model,
+        analysis_temperature,
+        prompt_temperature,
+        custom_context,
+        lyrics_or_text,
+        focus_fragment,
+        song_title,
+        song_description,
+        song_genre,
+        style_preset,
+        style_notes,
+        generate_environment_prompt,
+        generate_subject_prompt,
+        generate_merge_prompt,
+        mood_prompt_override="",
+        subject_analysis_prompt_override="",
+        environment_prompt_override="",
+        subject_prompt_override="",
+        merge_prompt_override="",
+    ):
+        self._style_block = _build_style_block(style_preset, style_notes)
+        self._mood_prompt_override = mood_prompt_override
+        self._subject_analysis_prompt_override = subject_analysis_prompt_override
+        self._environment_prompt_override = environment_prompt_override
+        self._subject_prompt_override = subject_prompt_override
+        self._merge_prompt_override = merge_prompt_override
+        return super().analyze(
+            audio=audio,
+            ollama_url=ollama_url,
+            model=model,
+            analysis_temperature=analysis_temperature,
+            prompt_temperature=prompt_temperature,
+            custom_context=custom_context,
+            lyrics_or_text=lyrics_or_text,
+            focus_fragment=focus_fragment,
+            song_title=song_title,
+            song_description=song_description,
+            song_genre=song_genre,
+            style_preset=style_preset,
+            style_notes=style_notes,
+            generate_environment_prompt=generate_environment_prompt,
+            generate_subject_prompt=generate_subject_prompt,
+            generate_merge_prompt=generate_merge_prompt,
+        )
+
+    def _build_mood_prompt(self, features, custom_context):
         rendered = self._render_override(
-            mood_prompt_override,
+            getattr(self, "_mood_prompt_override", ""),
             {
                 "features": _fmt_json(features),
                 "custom_context": custom_context,
-                "style_block": kwargs.get("style_block", ""),
+                "style_block": getattr(self, "_style_block", ""),
             },
             "mood_prompt",
         )
@@ -700,10 +749,9 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
         custom_context,
         song_description="",
         song_genre="",
-        subject_analysis_prompt_override="",
     ):
         rendered = self._render_override(
-            subject_analysis_prompt_override,
+            getattr(self, "_subject_analysis_prompt_override", ""),
             {
                 "lyrics_or_text": lyrics_or_text,
                 "focus_fragment": focus_fragment,
@@ -723,11 +771,9 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
             song_genre=song_genre,
         )
 
-    def _build_environment_prompt_request(
-        self, mood_json, subject_json, style_block, environment_prompt_override=""
-    ):
+    def _build_environment_prompt_request(self, mood_json, subject_json, style_block):
         rendered = self._render_override(
-            environment_prompt_override,
+            getattr(self, "_environment_prompt_override", ""),
             {
                 "mood_json": _fmt_json(mood_json),
                 "subject_json": _fmt_json(subject_json),
@@ -741,9 +787,9 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
             style_block=style_block,
         )
 
-    def _build_subject_prompt_request(self, subject_json, style_block, subject_prompt_override=""):
+    def _build_subject_prompt_request(self, subject_json, style_block):
         rendered = self._render_override(
-            subject_prompt_override,
+            getattr(self, "_subject_prompt_override", ""),
             {
                 "subject_json": _fmt_json(subject_json),
                 "style_block": style_block,
@@ -755,16 +801,9 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
             style_block=style_block,
         )
 
-    def _build_merge_prompt_request(
-        self,
-        mood_summary,
-        environment_prompt,
-        subject_prompt,
-        style_block,
-        merge_prompt_override="",
-    ):
+    def _build_merge_prompt_request(self, mood_summary, environment_prompt, subject_prompt, style_block):
         rendered = self._render_override(
-            merge_prompt_override,
+            getattr(self, "_merge_prompt_override", ""),
             {
                 "mood_summary": mood_summary,
                 "environment_prompt": environment_prompt,

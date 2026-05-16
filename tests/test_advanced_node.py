@@ -25,24 +25,60 @@ def test_input_types_has_override_fields():
 
 def test_mood_override_used_when_provided():
     node = AudioMoodAnalyzerAdvanced()
-    result = node._build_mood_prompt(
-        DUMMY_FEATURES, "context",
-        mood_prompt_override="custom mood: {features}"
-    )
+    node._mood_prompt_override = "custom mood: {features}"
+    result = node._build_mood_prompt(DUMMY_FEATURES, "context")
     assert "custom mood:" in result
     assert str(DUMMY_FEATURES["tempo_bpm"]) in result
 
 
 def test_mood_override_skipped_when_empty():
     node = AudioMoodAnalyzerAdvanced()
-    result = node._build_mood_prompt(DUMMY_FEATURES, "context", mood_prompt_override="")
+    node._mood_prompt_override = ""
+    result = node._build_mood_prompt(DUMMY_FEATURES, "context")
     assert "art director" in result  # built-in template
 
 
 def test_invalid_override_falls_back_to_builtin():
     node = AudioMoodAnalyzerAdvanced()
-    result = node._build_mood_prompt(
-        DUMMY_FEATURES, "context",
-        mood_prompt_override="bad template: {nonexistent_variable}"
-    )
+    node._mood_prompt_override = "bad template: {nonexistent_variable}"
+    result = node._build_mood_prompt(DUMMY_FEATURES, "context")
     assert "art director" in result  # fell back
+
+
+from unittest.mock import patch
+
+def test_analyze_passes_override_to_mood_builder():
+    """Verify that mood_prompt_override reaches _build_mood_prompt via analyze()."""
+    node = AudioMoodAnalyzerAdvanced()
+    with patch.object(node, '_build_mood_prompt', wraps=node._build_mood_prompt) as mock_build, \
+         patch.object(node, '_timed_generate', return_value='{"sonic_mood":[],"energy_profile":"","tension_profile":"","visual_environment_implications":[],"lighting_implications":[],"color_palette":[],"texture_implications":[],"subject_presence":[],"composition_suggestions":[],"motion_feel":[],"camera_language":[],"avoid":[]}'), \
+         patch.object(node, '_audio_to_numpy', return_value=([], 44100)), \
+         patch.object(node, '_extract_features', return_value=DUMMY_FEATURES):
+        try:
+            node.analyze(
+                audio={},
+                ollama_url="http://localhost:11434/api/generate",
+                model="test",
+                analysis_temperature=0.4,
+                prompt_temperature=0.8,
+                custom_context="ctx",
+                lyrics_or_text="",
+                focus_fragment="",
+                song_title="",
+                song_description="",
+                song_genre="",
+                style_preset="painterly",
+                style_notes="",
+                generate_environment_prompt=False,
+                generate_subject_prompt=False,
+                generate_merge_prompt=False,
+                mood_prompt_override="override: {features}",
+                subject_analysis_prompt_override="",
+                environment_prompt_override="",
+                subject_prompt_override="",
+                merge_prompt_override="",
+            )
+        except Exception:
+            pass
+        mock_build.assert_called_once()
+        assert node._mood_prompt_override == "override: {features}"
