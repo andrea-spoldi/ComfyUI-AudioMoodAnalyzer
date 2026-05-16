@@ -427,7 +427,7 @@ Output only the final image-generation prompt.
         custom_context,
     ):
         if subject_prompt.strip():
-            subject_section = f"\nSubject prompt:\n{subject_prompt}\n"
+            subject_section = f"Subject prompt:\n{subject_prompt}\n"
             task_instruction = (
                 "Merge the environment and subject into one coherent final image-generation prompt."
             )
@@ -529,8 +529,7 @@ Do not copy lines from the lyrics.
 Your goal is to infer a visually renderable human subject from emotional and symbolic material.
 
 Additional creative context:
-{custom_context}
-{title_line}{genre_line}{description_block}
+{custom_context}{title_line}{genre_line}{description_block}
 
 Full lyrics or source text:
 {lyrics_or_text}
