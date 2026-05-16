@@ -7,6 +7,30 @@ import librosa
 
 _LOG = "[AudioMoodAnalyzer]"
 
+_CLAP_MODEL_CACHE: dict = {}
+
+def _resolve_clap_device(device_str: str) -> str:
+    if device_str != "auto":
+        return device_str
+    import torch
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+def _get_clap_model(model_name: str, device_str: str):
+    key = (model_name, device_str)
+    if key not in _CLAP_MODEL_CACHE:
+        print(f"{_LOG} Loading CLAP model {model_name} on {device_str}…")
+        from transformers import ClapModel, ClapProcessor
+        model = ClapModel.from_pretrained(model_name)
+        model.to(device_str)
+        processor = ClapProcessor.from_pretrained(model_name)
+        model.eval()
+        _CLAP_MODEL_CACHE[key] = (model, processor)
+    return _CLAP_MODEL_CACHE[key]
+
 STYLE_PRESETS = {
     "painterly": (
         "Target aesthetic: oil painting, raw expressive brushwork, emotionally loaded colour, "
