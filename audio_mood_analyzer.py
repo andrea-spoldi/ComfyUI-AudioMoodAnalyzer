@@ -825,12 +825,43 @@ class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
         )
 
 
+class OllamaModelSelector:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "ollama_url": ("STRING", {"default": "http://localhost:11434"}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("models_list", "first_model")
+    FUNCTION = "list_models"
+    CATEGORY = "audio/analysis"
+
+    def list_models(self, ollama_url):
+        try:
+            base = ollama_url.rstrip("/")
+            response = requests.get(f"{base}/api/tags", timeout=10)
+            response.raise_for_status()
+            models = [m["name"] for m in response.json().get("models", [])]
+            if not models:
+                return ("(no models found)", "")
+            return ("\n".join(models), models[0])
+        except Exception as exc:
+            msg = f"(error querying Ollama: {exc})"
+            print(f"{_LOG} ⚠ OllamaModelSelector: {exc}")
+            return (msg, "")
+
+
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
     "AudioMoodAnalyzerAdvanced": AudioMoodAnalyzerAdvanced,
+    "OllamaModelSelector": OllamaModelSelector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AudioMoodAnalyzer": "Audio Mood Analyzer",
     "AudioMoodAnalyzerAdvanced": "Audio Mood Analyzer (Advanced)",
+    "OllamaModelSelector": "Ollama Model Selector",
 }
