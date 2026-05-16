@@ -3,35 +3,18 @@
 ```json
 {
   "project": "fear-of-the-art-audio-analyzer",
-  "updated": "2026-05-16",
+  "updated": "2026-05-17",
 
   "current_session": {
     "id": "S-005",
     "goal": "CLAP node + README refinement (T-007, T-008)",
     "task_ref": "T-007",
     "started": "2026-05-16",
-    "status": "in-progress",
+    "status": "done",
     "blocker": null
   },
 
-  "backlog": [
-    {
-      "id": "T-007",
-      "title": "ClapAudioAnalyzer — standalone CLAP semantic embedding node",
-      "size": "M",
-      "spec": "docs/superpowers/specs/2026-05-16-clap-node-design.md",
-      "plan": "docs/superpowers/plans/2026-05-16-clap-node.md",
-      "notes": "Option A — zero changes to existing nodes. semantic_summary → custom_context via Text Concatenate."
-    },
-    {
-      "id": "T-008",
-      "title": "README refinement — philosophy, intent, experimental framing",
-      "size": "S",
-      "spec": "docs/superpowers/specs/2026-05-16-readme-refinement-design.md",
-      "plan": "docs/superpowers/plans/2026-05-16-readme-refinement.md",
-      "notes": "Lead with the idea, not the features. Add CLAP + OllamaModelSelector docs. Honest about experimental nature."
-    }
-  ],
+  "backlog": [],
 
   "decisions": [
     {
@@ -134,6 +117,20 @@
       "completed_date": "2026-05-16",
       "session_ref": "S-004",
       "notes": "Proportional frame mapping. Newline sanitisation in prompts. 11 tests. example_animatediff.json + README."
+    },
+    {
+      "id": "T-007",
+      "title": "ClapAudioAnalyzer — standalone CLAP semantic embedding node",
+      "completed_date": "2026-05-17",
+      "session_ref": "S-005",
+      "notes": "Option A standalone. _CLAP_MODEL_CACHE + _resolve_clap_device + _get_clap_model helpers. 19 tests. example_clap.json. transformers>=4.35.0 added to requirements."
+    },
+    {
+      "id": "T-008",
+      "title": "README refinement — philosophy, intent, experimental framing",
+      "completed_date": "2026-05-17",
+      "session_ref": "S-005",
+      "notes": "Philosophy-first rewrite. CLAP + OllamaModelSelector documented. 4-section prose opening. Honest experimental framing. 267 lines."
     }
   ]
 }
@@ -150,13 +147,6 @@
 | T-005 | AudioMoodAnalyzerTimeline | 2026-05-16 | S-003 |
 | T-006 | AnimateDiffScheduleFormatter | 2026-05-16 | S-004 |
 
-## Backlog
-
-| ID | Title | Size |
-|----|-------|------|
-| T-007 | ClapAudioAnalyzer — standalone CLAP semantic embedding node | M |
-| T-008 | README refinement — philosophy, intent, experimental framing | S |
-
 ## Current Session
 
-**S-005** — in progress. T-007 (ClapAudioAnalyzer) + T-008 (README refinement). Specs + plans written and committed.
+**S-005** — done. T-007 (ClapAudioAnalyzer) + T-008 (README refinement) complete. Backlog empty.
