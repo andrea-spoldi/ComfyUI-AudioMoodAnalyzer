@@ -46,6 +46,9 @@ class TestGetClapModel(unittest.TestCase):
             model, proc = ama._get_clap_model("laion/clap-htsat-unfused", "cpu")
         m_model.assert_called_once_with("laion/clap-htsat-unfused")
         self.assertIs(model, mock_model)
+        mock_model.to.assert_called_once_with("cpu")
+        mock_model.eval.assert_called_once()
+        self.assertIs(proc, mock_proc)
 
     def test_caches_model_on_second_call(self):
         mock_model = MagicMock()

@@ -26,8 +26,8 @@ def _get_clap_model(model_name: str, device_str: str):
         from transformers import ClapModel, ClapProcessor
         model = ClapModel.from_pretrained(model_name)
         model.to(device_str)
-        processor = ClapProcessor.from_pretrained(model_name)
         model.eval()
+        processor = ClapProcessor.from_pretrained(model_name)
         _CLAP_MODEL_CACHE[key] = (model, processor)
     return _CLAP_MODEL_CACHE[key]
 
