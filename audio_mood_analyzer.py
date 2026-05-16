@@ -1107,8 +1107,8 @@ class ClapAudioAnalyzer:
         }
 
     def analyze(self, audio, clap_model, clap_device, clap_text_anchors):
-        import torch
         try:
+            import torch
             # audio extraction
             waveform = audio["waveform"]
             sr = int(audio["sample_rate"])
@@ -1124,14 +1124,14 @@ class ClapAudioAnalyzer:
             model, processor = _get_clap_model(clap_model, device)
 
             audio_inputs = processor(audios=[y], sampling_rate=sr, return_tensors="pt")
-            audio_inputs = {k: v.to(device) for k, v in audio_inputs.items()}
+            audio_inputs = {k: v.to(device) if hasattr(v, "to") else v for k, v in audio_inputs.items()}
             with torch.no_grad():
                 audio_emb = model.get_audio_features(**audio_inputs)
             audio_emb = audio_emb / audio_emb.norm(dim=-1, keepdim=True)
 
             anchors = [a.strip() for a in clap_text_anchors.strip().splitlines() if a.strip()]
             text_inputs = processor(text=anchors, return_tensors="pt", padding=True)
-            text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
+            text_inputs = {k: v.to(device) if hasattr(v, "to") else v for k, v in text_inputs.items()}
             with torch.no_grad():
                 text_emb = model.get_text_features(**text_inputs)
             text_emb = text_emb / text_emb.norm(dim=-1, keepdim=True)
