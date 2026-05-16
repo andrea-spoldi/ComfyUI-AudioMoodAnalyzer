@@ -91,6 +91,14 @@ class AudioMoodAnalyzer:
                 "song_genre": ("STRING", {
                     "default": ""
                 }),
+                "style_preset": (
+                    ["painterly", "cinematic", "raw", "abstract", "custom"],
+                    {"default": "painterly"}
+                ),
+                "style_notes": ("STRING", {
+                    "multiline": True,
+                    "default": ""
+                }),
                 "generate_environment_prompt": ("BOOLEAN", {"default": True}),
                 "generate_subject_prompt": ("BOOLEAN", {"default": True}),
                 "generate_merge_prompt": ("BOOLEAN", {"default": True}),
@@ -123,6 +131,8 @@ class AudioMoodAnalyzer:
         song_title,
         song_description,
         song_genre,
+        style_preset,
+        style_notes,
         generate_environment_prompt,
         generate_subject_prompt,
         generate_merge_prompt,
@@ -132,6 +142,8 @@ class AudioMoodAnalyzer:
         features = self._extract_features(y, sr)
         duration = features.get("duration_seconds", "?")
         print(f"{_LOG} audio: {duration}s  model: {model}")
+
+        style_block = _build_style_block(style_preset, style_notes)
 
         raw_mood = self._timed_generate(
             "mood analysis", ollama_url, model,
