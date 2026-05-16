@@ -379,18 +379,16 @@ Return only valid JSON with this structure:
 Do not include any text before or after the JSON.
 """
 
-    def _build_environment_prompt_request(self, mood_json, subject_json, custom_context):
+    def _build_environment_prompt_request(self, mood_json, subject_json, style_block):
+        style_section = f"\nVisual style target:\n{style_block}\n" if style_block.strip() else ""
         return f"""
 You are an art director creating an environment-only image-generation prompt.
-
+{style_section}
 Use the sonic mood analysis as the main source:
 {_fmt_json(mood_json)}
 
 Use the lyrical subject analysis only as subtle atmospheric influence:
 {_fmt_json(subject_json)}
-
-Additional creative context:
-{custom_context}
 
 Create a prompt for the ENVIRONMENT ONLY.
 No people.
@@ -418,15 +416,13 @@ Avoid:
 Output only the final image-generation prompt.
 """
 
-    def _build_subject_prompt_request(self, subject_json, custom_context):
+    def _build_subject_prompt_request(self, subject_json, style_block):
+        style_section = f"\nVisual style target:\n{style_block}\n" if style_block.strip() else ""
         return f"""
 You are an art director creating a subject-only image-generation prompt.
-
+{style_section}
 Use the following subject analysis extracted from lyrics or poetic text:
 {_fmt_json(subject_json)}
-
-Additional creative context:
-{custom_context}
 
 Create a prompt for the HUMAN SUBJECT ONLY.
 Use a minimal or neutral background.
@@ -450,25 +446,23 @@ Avoid:
 - literal horror clichés
 - overdescribing
 
-If:
-    the source text is written in first person
-Then:
-    translate it into third-person visual language.
-    do not preserve the original point of view.
-    convert "I" into "a solitary figure", "the subject", "a person", or a more specific visual archetype.
-
-    Focus on what can be seen externally: posture, expression, gesture, tension, gaze, movement, symbolic attributes.
+If the source text is written in first person,
+translate it into third-person visual language.
+Do not preserve the original point of view.
+Convert "I" into "a solitary figure", "the subject", "a person", or a more specific visual archetype.
+Focus on what can be seen externally: posture, expression, gesture, tension, gaze, movement, symbolic attributes.
 
 Output only the final image-generation prompt.
 """
 
     def _build_merge_prompt_request(
         self,
-        mood_json,
+        mood_summary,
         environment_prompt,
         subject_prompt,
-        custom_context,
+        style_block,
     ):
+        style_section = f"\nVisual style target:\n{style_block}\n" if style_block.strip() else ""
         if subject_prompt.strip():
             subject_section = f"Subject prompt:\n{subject_prompt}\n"
             task_instruction = (
@@ -483,21 +477,17 @@ Output only the final image-generation prompt.
 
         return f"""
 You are an art director composing a final image-generation prompt.
-
-Sonic mood analysis:
-{_fmt_json(mood_json)}
+{style_section}
+Sonic mood summary:
+{mood_summary}
 
 Environment prompt:
 {environment_prompt}
 {subject_section}
-Additional creative context:
-{custom_context}
-
 {task_instruction}
 
 Keep it:
 - coherent
-- painterly
 - emotional
 - atmospheric
 - symbolic
