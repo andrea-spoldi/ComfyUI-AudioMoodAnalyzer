@@ -39,7 +39,7 @@ class AudioMoodAnalyzer:
                     "multiline": True,
                     "default": (
                         "Analyze the music as pure sound, not lyrics. "
-                        "Translate sonic qualities into dark, painterly, emotional visual direction."
+                        "Translate sonic qualities into emotional visual direction."
                     )
                 }),
                 "lyrics_or_text": ("STRING", {
@@ -51,6 +51,13 @@ class AudioMoodAnalyzer:
                     "default": ""
                 }),
                 "song_title": ("STRING", {
+                    "default": ""
+                }),
+                "song_description": ("STRING", {
+                    "multiline": True,
+                    "default": ""
+                }),
+                "song_genre": ("STRING", {
                     "default": ""
                 }),
                 "generate_environment_prompt": ("BOOLEAN", {"default": True}),
@@ -83,6 +90,8 @@ class AudioMoodAnalyzer:
         lyrics_or_text,
         focus_fragment,
         song_title,
+        song_description,
+        song_genre,
         generate_environment_prompt,
         generate_subject_prompt,
         generate_merge_prompt,
@@ -101,7 +110,8 @@ class AudioMoodAnalyzer:
         mood_json = self._extract_json(raw_mood)
         subject_json = {}
 
-        if lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip():
+        if (lyrics_or_text.strip() or focus_fragment.strip() or song_title.strip()
+                or song_description.strip() or song_genre.strip()):
             raw_subject = self._timed_generate(
                 "subject analysis", ollama_url, model,
                 self._build_subject_analysis_prompt(
@@ -109,6 +119,8 @@ class AudioMoodAnalyzer:
                     focus_fragment=focus_fragment,
                     custom_context=custom_context,
                     song_title=song_title,
+                    song_description=song_description,
+                    song_genre=song_genre,
                 ),
                 analysis_temperature,
             )
@@ -299,6 +311,12 @@ Audio features:
 
 Transform these audio features into a visual mood sheet for image generation.
 
+Focus on atmosphere, intensity, movement, emotional pressure, vulnerability,
+darkness, contrast, rhythm and painterly interpretation.
+
+Do not mention lyrics.
+Do not quote the song.
+
 Return only valid JSON with this structure:
 {{
   "sonic_mood": [],
@@ -315,51 +333,47 @@ Return only valid JSON with this structure:
   "avoid": []
 }}
 
-Focus on atmosphere, intensity, movement, emotional pressure, vulnerability,
-darkness, contrast, rhythm and painterly interpretation.
-
-Do not mention lyrics.
-Do not quote the song.
+Do not include any text before or after the JSON.
 """
 
     def _build_environment_prompt_request(self, mood_json, subject_json, custom_context):
         return f"""
-    You are an art director creating an environment-only image-generation prompt.
+You are an art director creating an environment-only image-generation prompt.
 
-    Use the sonic mood analysis as the main source:
-    {_fmt_json(mood_json)}
+Use the sonic mood analysis as the main source:
+{_fmt_json(mood_json)}
 
-    Use the lyrical subject analysis only as subtle atmospheric influence:
-    {_fmt_json(subject_json)}
+Use the lyrical subject analysis only as subtle atmospheric influence:
+{_fmt_json(subject_json)}
 
-    Additional creative context:
-    {custom_context}
+Additional creative context:
+{custom_context}
 
-    Create a prompt for the ENVIRONMENT ONLY.
-    No people.
-    No human subjects.
-    No portraits.
+Create a prompt for the ENVIRONMENT ONLY.
+No people.
+No human subjects.
+No portraits.
 
-    Focus on:
-    - location
-    - atmosphere
-    - darkness
-    - lighting
-    - color palette
-    - spatial pressure
-    - painterly texture
-    - emotional landscape
-    - composition
-    - visual rhythm
+Focus on:
+- location
+- atmosphere
+- darkness
+- lighting
+- color palette
+- spatial pressure
+- painterly texture
+- emotional landscape
+- composition
+- visual rhythm
 
-    Avoid:
-    - literal illustration of the lyrics
-    - generic masterpiece tags
-    - glossy AI look
-    - literal horror clichés
+Avoid:
+- literal illustration of the lyrics
+- generic masterpiece tags
+- glossy AI look
+- literal horror clichés
 
-    Output only the final image-generation prompt.
-    """
+Output only the final image-generation prompt.
+"""
 
     def _build_subject_prompt_request(self, subject_json, custom_context):
         return f"""
@@ -412,23 +426,31 @@ Output only the final image-generation prompt.
         subject_prompt,
         custom_context,
     ):
+        if subject_prompt.strip():
+            subject_section = f"\nSubject prompt:\n{subject_prompt}\n"
+            task_instruction = (
+                "Merge the environment and subject into one coherent final image-generation prompt."
+            )
+        else:
+            subject_section = ""
+            task_instruction = (
+                "Refine and elevate the environment prompt into a final image-generation prompt. "
+                "No human subject is present — keep the focus on atmosphere, landscape, and mood."
+            )
+
         return f"""
-You are an art director merging an environment prompt and a subject prompt
-into one coherent final image-generation prompt.
+You are an art director composing a final image-generation prompt.
 
 Sonic mood analysis:
 {_fmt_json(mood_json)}
 
 Environment prompt:
 {environment_prompt}
-
-Subject prompt:
-{subject_prompt}
-
+{subject_section}
 Additional creative context:
 {custom_context}
 
-Create one unified final image-generation prompt.
+{task_instruction}
 
 Keep it:
 - coherent
@@ -487,78 +509,80 @@ Output only the final image-generation prompt.
         lyrics_or_text,
         focus_fragment,
         song_title,
-        custom_context
+        custom_context,
+        song_description="",
+        song_genre="",
     ):
+        title_line = f"\nSong title:\n{song_title}" if song_title.strip() else ""
+        genre_line = f"\nGenre / style:\n{song_genre}" if song_genre.strip() else ""
+        description_block = (
+            f"\nSong description (general meaning, emotional arc, artist intent):\n{song_description}"
+            if song_description.strip() else ""
+        )
         return f"""
-    You are an art director analyzing lyrics or poetic text to extract the HUMAN SUBJECT.
+You are an art director analyzing lyrics or poetic text to extract the HUMAN SUBJECT.
 
-    Do not summarize the lyrics.
-    Do not quote the lyrics.
-    Do not copy lines from the lyrics.
+Do not summarize the lyrics.
+Do not quote the lyrics.
+Do not copy lines from the lyrics.
 
-    Your goal is to infer a visually renderable human subject from emotional and symbolic material.
+Your goal is to infer a visually renderable human subject from emotional and symbolic material.
 
-    Additional creative context:
-    {custom_context}
+Additional creative context:
+{custom_context}
+{title_line}{genre_line}{description_block}
 
-    Song title:
-    {song_title}
+Full lyrics or source text:
+{lyrics_or_text}
 
-    Full lyrics or source text:
-    {lyrics_or_text}
+Focus fragment:
+{focus_fragment}
 
-    Focus fragment:
-    {focus_fragment}
+Use the song title, genre, and description as thematic and symbolic context.
+The focus fragment is the PRIMARY emotional and visual anchor.
+Use the rest of the lyrics only as secondary atmospheric context.
 
-    Use the song title as thematic and symbolic context.
-    The focus fragment is the PRIMARY emotional and visual anchor.
-    Use the rest of the lyrics only as secondary atmospheric context.
+If the source text is written in first person,
+translate it into third-person visual language.
 
-    If the source text is written in first person,
-    translate it into third-person visual language.
+Do not preserve the original point of view.
 
-    Do not preserve the original point of view.
+Convert internal emotions into visible external characteristics:
+- posture
+- expression
+- gaze
+- body tension
+- movement
+- symbolic attributes
+- emotional pressure
+- vulnerability
+- psychological instability
 
-    Convert internal emotions into visible external characteristics:
-    - posture
-    - expression
-    - gaze
-    - body tension
-    - movement
-    - symbolic attributes
-    - emotional pressure
-    - vulnerability
-    - psychological instability
+Return only valid JSON with this structure:
+{{
+  "narrative_voice": "",
+  "subject_role": "",
+  "third_person_subject_description": "",
+  "subject_psychology": [],
+  "emotional_conflict": [],
+  "posture": [],
+  "expression": [],
+  "eyes_and_face": [],
+  "body_language": [],
+  "symbolic_attributes": [],
+  "implied_motion": [],
+  "visible_translation_of_inner_state": [],
+  "visual_distortions": [],
+  "avoid": []
+}}
 
-    Return only valid JSON with this structure:
-    {{
-    "narrative_voice": "",
-    "subject_role": "",
-    "third_person_subject_description": "",
-    "subject_psychology": [],
-    "emotional_conflict": [],
-    "posture": [],
-    "expression": [],
-    "eyes_and_face": [],
-    "body_language": [],
-    "symbolic_attributes": [],
-    "implied_motion": [],
-    "visible_translation_of_inner_state": [],
-    "visual_distortions": [],
-    "avoid": []
-    }}
+Focus on emotional specificity rather than generic symbolism.
 
-    Focus on emotional specificity rather than generic symbolism.
+The final subject should feel visually concrete, emotionally vulnerable,
+psychologically believable, and suitable for painterly image generation.
 
-    The final subject should feel:
-    - visually concrete
-    - emotionally vulnerable
-    - psychologically believable
-    - suitable for painterly image generation
-
-    Do not mention lyrics.
-    Do not quote the lyrics.
-    """
+Do not include any text before or after the JSON.
+"""
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer
