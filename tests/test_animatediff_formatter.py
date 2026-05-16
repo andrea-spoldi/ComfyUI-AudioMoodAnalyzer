@@ -102,10 +102,12 @@ def test_prompt_type_subject_uses_subject_field():
 
 
 def test_duplicate_frame_numbers_later_segment_wins():
-    # total_frames=4 with 8 segments forces collisions
-    segments = make_segments(8, 18.0)
+    # Force a known collision: 2 segments with total_frames=1 means both map to frame 0.
+    # Segment 2 is later and should win.
+    segments = make_segments(2, 18.0)
     node = AnimateDiffScheduleFormatter()
-    schedule, _ = node.format_schedule(json.dumps(segments), 4, "merge_prompt")
-    assert schedule != ""
-    lines = [l for l in schedule.split("\n") if l.strip()]
-    assert len(lines) <= 4  # at most 4 unique frames
+    schedule, first_frame_prompt = node.format_schedule(json.dumps(segments), 1, "merge_prompt")
+    # With total_frames=1, both segments map to frame 0 (clamped).
+    # Segment 2's prompt ("merge prompt 2") should be in the output.
+    assert "merge prompt 2" in schedule
+    assert first_frame_prompt == "merge prompt 2"

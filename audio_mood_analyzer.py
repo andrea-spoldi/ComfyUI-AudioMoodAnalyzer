@@ -1039,7 +1039,7 @@ class AnimateDiffScheduleFormatter:
                 continue
             frame = round(seg["start_s"] / total_duration * total_frames)
             frame = max(0, min(frame, total_frames - 1))
-            frame_map[frame] = prompt.replace('"', "'")
+            frame_map[frame] = prompt.replace('"', "'").replace("\n", " ").replace("\r", "")
 
         if not frame_map:
             return ("", "")
