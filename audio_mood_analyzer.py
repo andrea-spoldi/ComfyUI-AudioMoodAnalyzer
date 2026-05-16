@@ -616,10 +616,68 @@ psychologically believable, and suitable for painterly image generation.
 Do not include any text before or after the JSON.
 """
 
+class AudioMoodAnalyzerAdvanced(AudioMoodAnalyzer):
+    """AudioMoodAnalyzer with optional full prompt template overrides."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        base = super().INPUT_TYPES()
+        base["optional"] = {
+            "mood_prompt_override": ("STRING", {
+                "multiline": True,
+                "default": "",
+                "tooltip": (
+                    "Override the audio mood analysis prompt. Leave empty to use built-in. "
+                    "Available variables: {features}, {custom_context}, {style_block}"
+                ),
+            }),
+            "subject_analysis_prompt_override": ("STRING", {
+                "multiline": True,
+                "default": "",
+                "tooltip": (
+                    "Override the subject analysis prompt. Leave empty to use built-in. "
+                    "Available variables: {lyrics_or_text}, {focus_fragment}, "
+                    "{song_title}, {song_description}, {song_genre}, {custom_context}"
+                ),
+            }),
+            "environment_prompt_override": ("STRING", {
+                "multiline": True,
+                "default": "",
+                "tooltip": (
+                    "Override the environment image-gen prompt. Leave empty to use built-in. "
+                    "Available variables: {mood_json}, {subject_json}, {style_block}"
+                ),
+            }),
+            "subject_prompt_override": ("STRING", {
+                "multiline": True,
+                "default": "",
+                "tooltip": (
+                    "Override the subject image-gen prompt. Leave empty to use built-in. "
+                    "Available variables: {subject_json}, {style_block}"
+                ),
+            }),
+            "merge_prompt_override": ("STRING", {
+                "multiline": True,
+                "default": "",
+                "tooltip": (
+                    "Override the merge prompt. Leave empty to use built-in. "
+                    "Available variables: {mood_summary}, {environment_prompt}, "
+                    "{subject_prompt}, {style_block}"
+                ),
+            }),
+        }
+        return base
+
+    FUNCTION = "analyze"
+    CATEGORY = "audio/analysis"
+
+
 NODE_CLASS_MAPPINGS = {
-    "AudioMoodAnalyzer": AudioMoodAnalyzer
+    "AudioMoodAnalyzer": AudioMoodAnalyzer,
+    "AudioMoodAnalyzerAdvanced": AudioMoodAnalyzerAdvanced,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AudioMoodAnalyzer": "Audio Mood Analyzer"
+    "AudioMoodAnalyzer": "Audio Mood Analyzer",
+    "AudioMoodAnalyzerAdvanced": "Audio Mood Analyzer (Advanced)",
 }
