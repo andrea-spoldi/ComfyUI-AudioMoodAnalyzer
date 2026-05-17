@@ -6,10 +6,10 @@
   "updated": "2026-05-17",
 
   "current_session": {
-    "id": "S-005",
-    "goal": "CLAP node + README refinement (T-007, T-008)",
-    "task_ref": "T-007",
-    "started": "2026-05-16",
+    "id": "S-006",
+    "goal": "CLAP runtime bug fixes (audios→audio kwarg, resample to 48kHz, unwrap BaseModelOutputWithPooling)",
+    "task_ref": null,
+    "started": "2026-05-17",
     "status": "done",
     "blocker": null
   },

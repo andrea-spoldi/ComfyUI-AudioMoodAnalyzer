@@ -1123,10 +1123,17 @@ class ClapAudioAnalyzer:
             device = _resolve_clap_device(clap_device)
             model, processor = _get_clap_model(clap_model, device)
 
-            audio_inputs = processor(audios=[y], sampling_rate=sr, return_tensors="pt")
+            target_sr = processor.feature_extractor.sampling_rate
+            if sr != target_sr:
+                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+                sr = target_sr
+
+            audio_inputs = processor(audio=[y], sampling_rate=sr, return_tensors="pt")
             audio_inputs = {k: v.to(device) if hasattr(v, "to") else v for k, v in audio_inputs.items()}
             with torch.no_grad():
                 audio_emb = model.get_audio_features(**audio_inputs)
+            if not isinstance(audio_emb, torch.Tensor):
+                audio_emb = audio_emb.pooler_output
             audio_emb = audio_emb / audio_emb.norm(dim=-1, keepdim=True)
 
             anchors = [a.strip() for a in clap_text_anchors.strip().splitlines() if a.strip()]
@@ -1134,6 +1141,8 @@ class ClapAudioAnalyzer:
             text_inputs = {k: v.to(device) if hasattr(v, "to") else v for k, v in text_inputs.items()}
             with torch.no_grad():
                 text_emb = model.get_text_features(**text_inputs)
+            if not isinstance(text_emb, torch.Tensor):
+                text_emb = text_emb.pooler_output
             text_emb = text_emb / text_emb.norm(dim=-1, keepdim=True)
 
             scores = (audio_emb @ text_emb.T).squeeze(0).cpu().tolist()
