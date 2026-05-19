@@ -26,8 +26,11 @@ audio
              Ollama LLM (Qwen / any model)
                      ↓
         mood_json + subject_json
-                     ↓
-  environment_prompt / subject_prompt / merge_prompt
+                     ├─ environment_prompt / subject_prompt / merge_prompt
+                     └─ Composition Inference → composition_json
+                                                  ├─ composition_prompt
+                                                  ├─ width  (INT → EmptyLatentImage)
+                                                  └─ height (INT → EmptyLatentImage)
 ```
 
 CLAP is optional — the pipeline runs without it. When present, its semantic anchors and the librosa features both reach the LLM in a single analysis call, which produces structured mood data used to drive up to three prompt-generation calls: environment, subject, and merged final.
@@ -205,6 +208,47 @@ The model is loaded once per ComfyUI session (the Python process lifetime, not p
 
 ---
 
+### Composition Inference
+
+Acts as an art director downstream of `Audio Mood Analyzer`. Takes `mood_json` and `subject_json` and runs two Ollama calls to infer optimal visual composition — aspect ratio, orientation, subject placement, camera language — returning a structured JSON and a prose prompt layer alongside parsed `width` and `height` integers that wire directly into ComfyUI's `EmptyLatentImage`.
+
+#### Inputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `mood_json` | STRING | JSON from `Audio Mood Analyzer.mood_json` |
+| `subject_json` | STRING | JSON from `Audio Mood Analyzer.subject_json` |
+| `ollama_url` | STRING | Ollama API endpoint (default: `http://localhost:11434/api/generate`) |
+| `model` | STRING | Ollama model name (default: `qwen3:14b`) |
+| `analysis_temperature` | FLOAT | Temperature for structured composition JSON inference (default: `0.4`) |
+| `prompt_temperature` | FLOAT | Temperature for prose composition prompt generation (default: `0.8`) |
+
+Subject analysis is the primary signal — composition is inferred from the semantic and lyrical content of `subject_json`. If `subject_json` is empty the node continues, defaulting toward environment-dominant framing.
+
+#### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `composition_json` | STRING | Full composition analysis — aspect ratio, subject placement, environment weight, camera |
+| `composition_prompt` | STRING | Art direction prose — wire into `CLIPTextEncode` as a third conditioning layer alongside environment and subject prompts |
+| `width` | INT | Inferred canvas width — wire directly into `EmptyLatentImage.width` |
+| `height` | INT | Inferred canvas height — wire directly into `EmptyLatentImage.height` |
+
+The `composition_json` schema:
+
+```json
+{
+  "aspect_ratio": {"orientation": "portrait", "ratio": "4:5", "recommended_resolution": "1024x1280"},
+  "subject_placement": {"position": "lower_right", "size_weight": 0.35},
+  "environment": {"weight": 0.65, "negative_space": "high"},
+  "camera": {"distance": "medium", "framing_style": "environment_dominant", "crop": "waist_up"}
+}
+```
+
+On LLM parse failure, falls back to safe defaults (`1024×1024`, centered subject, balanced framing) and logs a warning. The pipeline continues.
+
+---
+
 ### Ollama Model Selector
 
 Queries a local Ollama server and returns the list of installed model names. Useful for wiring the correct model name into analysis nodes without hardcoding it.
@@ -232,6 +276,7 @@ Queries a local Ollama server and returns the list of installed model names. Use
 | `example_workflow/example_timeline.json` | Full-song timeline analysis, n_segments=8, merge_prompts wired to a single-image sanity check |
 | `example_workflow/example_animatediff.json` | Timeline → AnimateDiff formatter → ADE schedule string preview + first_frame_prompt as positive conditioning |
 | `example_workflow/example_clap.json` | CLAP semantic embedding — semantic_summary output shown via PreviewAny, ready to wire into AudioMoodAnalyzer.custom_context |
+| `example_workflow/example_composition.json` | Composition inference — AudioMoodAnalyzer → CompositionInferenceNode, width/height wired into EmptyLatentImage, composition_prompt shown via PreviewAny |
 
 ---
 
