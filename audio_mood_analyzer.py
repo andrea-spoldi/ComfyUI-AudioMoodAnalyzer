@@ -1257,6 +1257,88 @@ class CompositionInferenceNode:
         print(f"{_LOG} [Composition] ⚠ JSON parse failed ({len(text)} chars)")
         return {"error": "Could not parse model output as JSON", "raw_output": text}
 
+    def _build_composition_json_prompt(self, mood_json, subject_json):
+        subject_section = (
+            f"Subject analysis (primary signal — inferred from lyrics, focus fragments, or song description):\n{_fmt_json(subject_json)}"
+            if subject_json
+            else "Subject analysis: not available — infer from mood alone, default to environment_dominant framing."
+        )
+        return f"""
+You are an art director inferring visual composition from music analysis and lyrical subject material.
+
+{subject_section}
+
+Sonic mood analysis (supporting atmospheric context):
+{_fmt_json(mood_json)}
+
+Infer the optimal visual composition for an image that expresses this music.
+
+Consider:
+- Does the subject dominate, or does the environment carry the weight?
+- What orientation and ratio best serves the emotional content?
+- Where does the subject sit within the frame?
+- How much negative space reinforces the mood?
+- What camera distance and crop serve the subject?
+
+Return only valid JSON with this exact structure:
+{{
+  "aspect_ratio": {{
+    "orientation": "portrait",
+    "ratio": "4:5",
+    "recommended_resolution": "1024x1280"
+  }},
+  "subject_placement": {{
+    "position": "lower_right",
+    "size_weight": 0.35
+  }},
+  "environment": {{
+    "weight": 0.65,
+    "negative_space": "high"
+  }},
+  "camera": {{
+    "distance": "medium",
+    "framing_style": "environment_dominant",
+    "crop": "waist_up"
+  }}
+}}
+
+Constraints:
+- orientation must be one of: portrait, landscape, square
+- ratio must be one of: 4:5, 16:9, 9:16, 1:1, 3:2, 2:3
+- recommended_resolution must be one of: 1024x1280, 1280x1024, 768x1344, 1344x768, 896x1152, 1152x896, 1024x1024, 832x1216, 1216x832
+- position must be one of: center, lower_left, lower_right, upper_left, upper_right, off_frame
+- negative_space must be one of: low, medium, high
+- distance must be one of: close, medium, wide
+- framing_style must be one of: subject_dominant, environment_dominant, balanced
+- crop must be one of: full_body, waist_up, bust, face_only, none
+
+If subject analysis is unavailable, set framing_style to environment_dominant and crop to none.
+
+Do not include any text before or after the JSON.
+"""
+
+    def _build_composition_prose_request(self, composition_json):
+        return f"""
+You are an art director translating a composition analysis into image-generation prompt language.
+
+Composition analysis:
+{_fmt_json(composition_json)}
+
+Write a short, precise image-generation prompt that describes:
+- the framing and orientation
+- where the subject sits in the frame (if present)
+- the relationship between subject and environment
+- camera distance and crop
+- negative space quality
+
+Keep it:
+- concise (one to two sentences)
+- visual and specific
+- in image-generation prompt style (no explanation, no metadata)
+
+Output only the final composition prompt.
+"""
+
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
