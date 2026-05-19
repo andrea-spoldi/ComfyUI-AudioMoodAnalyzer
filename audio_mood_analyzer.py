@@ -1339,6 +1339,64 @@ Keep it:
 Output only the final composition prompt.
 """
 
+    def infer(
+        self,
+        mood_json,
+        subject_json,
+        ollama_url,
+        model,
+        analysis_temperature,
+        prompt_temperature,
+    ):
+        t0 = time.time()
+        print(f"{_LOG} [Composition] model: {model}")
+
+        try:
+            mood = json.loads(mood_json) if isinstance(mood_json, str) else mood_json
+        except (json.JSONDecodeError, TypeError):
+            mood = {}
+
+        try:
+            subject = json.loads(subject_json) if isinstance(subject_json, str) else subject_json
+        except (json.JSONDecodeError, TypeError):
+            subject = {}
+
+        if not subject:
+            print(f"{_LOG} [Composition] ⚠ subject_json empty — inferring from mood only")
+
+        raw_composition = self._timed_generate(
+            "composition inference", ollama_url, model,
+            self._build_composition_json_prompt(mood, subject),
+            analysis_temperature,
+        )
+        composition = self._extract_json(raw_composition)
+
+        if "error" in composition:
+            print(f"{_LOG} [Composition] ⚠ falling back to safe composition defaults")
+            composition = _COMPOSITION_FALLBACK
+
+        width, height = _parse_resolution(
+            composition.get("aspect_ratio", {}).get("recommended_resolution", "1024x1024")
+        )
+
+        composition_prompt = self._timed_generate(
+            "composition prompt", ollama_url, model,
+            self._build_composition_prose_request(composition),
+            prompt_temperature,
+        )
+
+        if not composition_prompt.strip():
+            print(f"{_LOG} [Composition] ⚠ empty composition prompt returned")
+
+        print(f"{_LOG} [Composition] done  total: {time.time()-t0:.1f}s")
+
+        return (
+            _fmt_json(composition),
+            composition_prompt,
+            width,
+            height,
+        )
+
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
