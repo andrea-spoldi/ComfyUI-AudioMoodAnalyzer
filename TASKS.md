@@ -6,15 +6,23 @@
   "updated": "2026-05-17",
 
   "current_session": {
-    "id": "S-006",
-    "goal": "CLAP runtime bug fixes (audios→audio kwarg, resample to 48kHz, unwrap BaseModelOutputWithPooling)",
-    "task_ref": null,
-    "started": "2026-05-17",
+    "id": "S-007",
+    "goal": "Add CompositionInferenceNode — two-call Ollama pipeline, width/height INT outputs",
+    "task_ref": "T-010",
+    "started": "2026-05-19",
     "status": "done",
     "blocker": null
   },
 
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "T-009",
+      "title": "Tests for CompositionInferenceNode",
+      "size": "S",
+      "status": "pending",
+      "notes": "See testing section in docs/superpowers/specs/2026-05-19-composition-inference-design.md. Mock _ollama_generate. Cover: all required JSON keys, orientation constraint, width/height match recommended_resolution, composition_prompt non-empty, fallback to 1024x1024 on malformed JSON, empty subject_json does not raise."
+    }
+  ],
 
   "decisions": [
     {
@@ -77,6 +85,13 @@
 
   "completed": [
     {
+      "id": "S-006-fixes",
+      "title": "ClapAudioAnalyzer runtime fixes",
+      "completed_date": "2026-05-17",
+      "session_ref": "S-006",
+      "notes": "audios→audio kwarg; auto-resample to model's target_sr; unwrap BaseModelOutputWithPooling for both audio and text embeddings."
+    },
+    {
       "id": "T-001",
       "title": "Add song_description and song_genre input fields",
       "completed_date": "2026-05-16",
@@ -131,6 +146,13 @@
       "completed_date": "2026-05-17",
       "session_ref": "S-005",
       "notes": "Philosophy-first rewrite. CLAP + OllamaModelSelector documented. 4-section prose opening. Honest experimental framing. 267 lines."
+    },
+    {
+      "id": "T-010",
+      "title": "CompositionInferenceNode — core implementation",
+      "completed_date": "2026-05-19",
+      "session_ref": "S-007",
+      "notes": "_parse_resolution, _COMPOSITION_FALLBACK, two-call pipeline, width/height INT outputs, composition_prompt STRING output."
     }
   ]
 }
@@ -149,4 +171,4 @@
 
 ## Current Session
 
-**S-005** — done. T-007 (ClapAudioAnalyzer) + T-008 (README refinement) complete. Backlog empty.
+**S-007** — done. T-010 (CompositionInferenceNode core) complete. T-009 (tests) in backlog.
