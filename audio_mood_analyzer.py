@@ -1215,6 +1215,48 @@ class CompositionInferenceNode:
     FUNCTION = "infer"
     CATEGORY = "audio/analysis"
 
+    def _ollama_generate(self, ollama_url, model, prompt, temperature, num_predict=-1):
+        response = requests.post(
+            ollama_url,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": temperature, "num_predict": num_predict},
+            },
+            timeout=600,
+        )
+        response.raise_for_status()
+        data = response.json()
+        thinking = data.get("thinking", "")
+        if thinking:
+            print(f"{_LOG} [Composition]   thinking: {len(thinking)} chars")
+        result = data.get("response", "").strip()
+        if not result:
+            print(f"{_LOG} [Composition] ⚠ empty response from Ollama")
+        return result
+
+    def _timed_generate(self, label, ollama_url, model, prompt, temperature):
+        print(f"{_LOG} [Composition] ▶ {label}")
+        t = time.time()
+        result = self._ollama_generate(ollama_url, model, prompt, temperature)
+        print(f"{_LOG} [Composition] ✓ {label}  ({time.time()-t:.1f}s, {len(result)} chars)")
+        return result
+
+    def _extract_json(self, text):
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            if start >= 0 and end > start:
+                try:
+                    return json.loads(text[start:end])
+                except json.JSONDecodeError:
+                    pass
+        print(f"{_LOG} [Composition] ⚠ JSON parse failed ({len(text)} chars)")
+        return {"error": "Could not parse model output as JSON", "raw_output": text}
+
 
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
