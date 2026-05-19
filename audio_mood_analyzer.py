@@ -1405,6 +1405,7 @@ NODE_CLASS_MAPPINGS = {
     "AnimateDiffScheduleFormatter": AnimateDiffScheduleFormatter,
     "OllamaModelSelector": OllamaModelSelector,
     "ClapAudioAnalyzer": ClapAudioAnalyzer,
+    "CompositionInferenceNode": CompositionInferenceNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1414,4 +1415,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimateDiffScheduleFormatter": "AnimateDiff Schedule Formatter",
     "OllamaModelSelector": "Ollama Model Selector",
     "ClapAudioAnalyzer": "CLAP Audio Analyzer",
+    "CompositionInferenceNode": "Composition Inference",
 }
