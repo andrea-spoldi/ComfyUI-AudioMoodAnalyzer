@@ -73,7 +73,7 @@ def _parse_resolution(resolution_str: str) -> tuple:
             if sep in resolution_str:
                 w, h = resolution_str.split(sep, 1)
                 return int(w.strip()), int(h.strip())
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError, TypeError):
         pass
     print(f"{_LOG} ⚠ could not parse resolution '{resolution_str}' — defaulting to 1024×1024")
     return 1024, 1024
