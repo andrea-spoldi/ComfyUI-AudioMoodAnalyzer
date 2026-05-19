@@ -1190,6 +1190,32 @@ class ClapAudioAnalyzer:
             return (_fmt_json(error_result), "")
 
 
+class CompositionInferenceNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "mood_json": ("STRING", {"multiline": True}),
+                "subject_json": ("STRING", {"multiline": True}),
+                "ollama_url": ("STRING", {
+                    "default": "http://localhost:11434/api/generate"
+                }),
+                "model": ("STRING", {"default": "qwen3:14b"}),
+                "analysis_temperature": ("FLOAT", {
+                    "default": 0.4, "min": 0.0, "max": 1.5, "step": 0.1
+                }),
+                "prompt_temperature": ("FLOAT", {
+                    "default": 0.8, "min": 0.0, "max": 1.5, "step": 0.1
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("composition_json", "composition_prompt", "width", "height")
+    FUNCTION = "infer"
+    CATEGORY = "audio/analysis"
+
+
 NODE_CLASS_MAPPINGS = {
     "AudioMoodAnalyzer": AudioMoodAnalyzer,
     "AudioMoodAnalyzerAdvanced": AudioMoodAnalyzerAdvanced,
