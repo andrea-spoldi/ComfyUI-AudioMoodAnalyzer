@@ -67,6 +67,30 @@ def _fmt_json(obj):
     return json.dumps(obj, indent=2, ensure_ascii=False)
 
 
+def _parse_resolution(resolution_str: str) -> tuple:
+    try:
+        for sep in ("×", "x"):
+            if sep in resolution_str:
+                w, h = resolution_str.split(sep, 1)
+                return int(w.strip()), int(h.strip())
+    except (ValueError, AttributeError):
+        pass
+    print(f"{_LOG} ⚠ could not parse resolution '{resolution_str}' — defaulting to 1024×1024")
+    return 1024, 1024
+
+
+_COMPOSITION_FALLBACK = {
+    "aspect_ratio": {
+        "orientation": "square",
+        "ratio": "1:1",
+        "recommended_resolution": "1024x1024",
+    },
+    "subject_placement": {"position": "center", "size_weight": 0.5},
+    "environment": {"weight": 0.5, "negative_space": "medium"},
+    "camera": {"distance": "medium", "framing_style": "balanced", "crop": "none"},
+}
+
+
 class AudioMoodAnalyzer:
     @classmethod
     def INPUT_TYPES(cls):
