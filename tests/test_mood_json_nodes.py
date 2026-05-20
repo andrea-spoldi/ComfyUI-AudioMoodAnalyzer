@@ -68,5 +68,71 @@ class TestMoodJsonUnpacker(unittest.TestCase):
         self.assertEqual(out["energy_profile"], "42")
 
 
+class TestPromptEnricher(unittest.TestCase):
+    def setUp(self):
+        self.node = mjn.PromptEnricher()
+
+    def _run(self, prompt, mood_json, fields_to_inject):
+        result = self.node.enrich(
+            prompt=prompt,
+            mood_json=mood_json,
+            fields_to_inject=fields_to_inject,
+        )
+        return result[0]  # single STRING output
+
+    def test_default_fields_appended(self):
+        mood = json.dumps({
+            "color_palette": ["deep blue", "charcoal"],
+            "lighting_implications": ["underlit"],
+            "texture_implications": ["rough"],
+        })
+        out = self._run("a dark figure", mood, "color_palette\nlighting_implications\ntexture_implications")
+        self.assertIn("deep blue, charcoal", out)
+        self.assertIn("underlit", out)
+        self.assertIn("rough", out)
+        self.assertTrue(out.startswith("a dark figure"))
+
+    def test_avoid_field_prefixed(self):
+        mood = json.dumps({"avoid": ["bright colours", "sharp edges"]})
+        out = self._run("base prompt", mood, "avoid")
+        self.assertIn("avoid: bright colours, sharp edges", out)
+
+    def test_unknown_field_silently_skipped(self):
+        mood = json.dumps({"color_palette": ["red"]})
+        out = self._run("base", mood, "color_palette\nnonexistent_field")
+        self.assertIn("red", out)
+        self.assertNotIn("nonexistent_field", out)
+
+    def test_malformed_json_returns_prompt_unchanged(self):
+        out = self._run("unchanged prompt", "{{bad json", "color_palette")
+        self.assertEqual(out, "unchanged prompt")
+
+    def test_empty_prompt_returns_injected_fields_only(self):
+        mood = json.dumps({"color_palette": ["red", "black"]})
+        out = self._run("", mood, "color_palette")
+        self.assertIn("red, black", out)
+
+    def test_empty_fields_to_inject_returns_prompt_unchanged(self):
+        mood = json.dumps({"color_palette": ["red"]})
+        out = self._run("base prompt", mood, "")
+        self.assertEqual(out, "base prompt")
+
+    def test_empty_list_field_skipped(self):
+        mood = json.dumps({"color_palette": [], "lighting_implications": ["side-lit"]})
+        out = self._run("base", mood, "color_palette\nlighting_implications")
+        self.assertNotIn("color_palette", out)
+        self.assertIn("side-lit", out)
+
+    def test_injection_order_follows_fields_to_inject(self):
+        mood = json.dumps({
+            "color_palette": ["blue"],
+            "lighting_implications": ["dark"],
+        })
+        out = self._run("base", mood, "lighting_implications\ncolor_palette")
+        idx_lighting = out.index("dark")
+        idx_color = out.index("blue")
+        self.assertLess(idx_lighting, idx_color)
+
+
 if __name__ == "__main__":
     unittest.main()
