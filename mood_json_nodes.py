@@ -1,7 +1,5 @@
 import json
 
-_LOG = "[AudioMoodAnalyzer]"
-
 _UNPACK_FIELDS = [
     "sonic_mood",
     "energy_profile",
