@@ -6,10 +6,10 @@
   "updated": "2026-05-17",
 
   "current_session": {
-    "id": "S-007",
-    "goal": "Add CompositionInferenceNode — two-call Ollama pipeline, width/height INT outputs",
-    "task_ref": "T-010",
-    "started": "2026-05-19",
+    "id": "S-008",
+    "goal": "MoodJsonUnpacker + PromptEnricher nodes — usability improvement, modularization pattern",
+    "task_ref": null,
+    "started": "2026-05-20",
     "status": "done",
     "blocker": null
   },
@@ -72,6 +72,20 @@
       "date": "2026-05-16",
       "decision": "AnimateDiffScheduleFormatter uses proportional frame mapping (start_s / total_duration × total_frames), not fps-based",
       "rationale": "Proportional mapping works regardless of song length or fps setting. fps is an AnimateDiff-side parameter.",
+      "supersedes": null
+    },
+    {
+      "id": "D-009",
+      "date": "2026-05-20",
+      "decision": "New nodes go in dedicated module files (e.g. mood_json_nodes.py); __init__.py merges mappings with {**_A, **_B}",
+      "rationale": "audio_mood_analyzer.py is already large; per-file modules improve maintainability and reduce token cost per edit session.",
+      "supersedes": null
+    },
+    {
+      "id": "D-010",
+      "date": "2026-05-20",
+      "decision": "PromptEnricher uses `if value is None` guard, not `if not value`",
+      "rationale": "`if not value` incorrectly skips valid falsy JSON values (0, False, '0'). Only None (missing key) should be skipped; `if not joined` handles empty strings and empty lists downstream.",
       "supersedes": null
     },
     {
@@ -146,6 +160,13 @@
       "completed_date": "2026-05-17",
       "session_ref": "S-005",
       "notes": "Philosophy-first rewrite. CLAP + OllamaModelSelector documented. 4-section prose opening. Honest experimental framing. 267 lines."
+    },
+    {
+      "id": "S-008-nodes",
+      "title": "MoodJsonUnpacker + PromptEnricher — usability nodes",
+      "completed_date": "2026-05-20",
+      "session_ref": "S-008",
+      "notes": "mood_json_nodes.py. MoodJsonUnpacker: 8 STRING outputs from mood_json. PromptEnricher: deterministic field injection. 14 tests. example_mood_unpack_enrich.json. README + CLAUDE.md updated."
     },
     {
       "id": "T-010",
