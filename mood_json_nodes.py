@@ -70,9 +70,9 @@ class PromptEnricher:
         result = prompt
         for field in fields:
             value = data.get(field)
-            if not value:
+            if value is None:
                 continue
-            joined = _join_field(value) if isinstance(value, list) else str(value)
+            joined = _join_field(value)
             if not joined:
                 continue
             if field == "avoid":
