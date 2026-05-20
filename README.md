@@ -249,6 +249,55 @@ On LLM parse failure, falls back to safe defaults (`1024×1024`, centered subjec
 
 ---
 
+### Mood JSON Unpacker
+
+Takes the `mood_json` output from `Audio Mood Analyzer` and exposes each field as a separate ComfyUI STRING output. Removes the need for a JSON parser node — individual fields wire directly into CLIPTextEncode, string concatenators, or any other downstream node.
+
+#### Inputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `mood_json` | STRING | JSON string from `Audio Mood Analyzer.mood_json` |
+
+#### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `sonic_mood` | STRING | Comma-joined mood adjectives (e.g. `melancholic, dense, pressured`) |
+| `energy_profile` | STRING | Prose description of energy level and behaviour |
+| `tension_profile` | STRING | Prose description of tension and internal pressure |
+| `color_palette` | STRING | Comma-joined color terms — wire into CLIPTextEncode or style notes |
+| `lighting_implications` | STRING | Comma-joined lighting descriptors |
+| `texture_implications` | STRING | Comma-joined texture descriptors |
+| `composition_suggestions` | STRING | Comma-joined composition cues |
+| `avoid` | STRING | Comma-joined negative terms — wire into the negative CLIPTextEncode |
+
+On malformed or empty input, all outputs return `""`. Missing keys return `""` individually — the node never raises.
+
+---
+
+### Prompt Enricher
+
+Takes any prompt string and deterministically appends selected `mood_json` fields to it. No LLM call — fast and predictable. The `fields_to_inject` input controls which fields are appended and in what order.
+
+#### Inputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `prompt` | STRING (multiline) | Base prompt to enrich — e.g. `merge_prompt` or `environment_prompt` from `Audio Mood Analyzer` |
+| `mood_json` | STRING | JSON string from `Audio Mood Analyzer.mood_json` |
+| `fields_to_inject` | STRING (multiline) | One field name per line — appended to the prompt in listed order (default: `color_palette`, `lighting_implications`, `texture_implications`) |
+
+#### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `enriched_prompt` | STRING | Base prompt with mood field values appended, comma-separated |
+
+The `avoid` field gets a labelled prefix (`avoid: ...`) rather than a plain comma append — useful if you pipe it into a negative prompt node. Unknown field names and empty values are silently skipped. On malformed `mood_json`, the base prompt is returned unchanged.
+
+---
+
 ### Ollama Model Selector
 
 Queries a local Ollama server and returns the list of installed model names. Useful for wiring the correct model name into analysis nodes without hardcoding it.
@@ -277,6 +326,7 @@ Queries a local Ollama server and returns the list of installed model names. Use
 | `example_workflow/example_animatediff.json` | Timeline → AnimateDiff formatter → ADE schedule string preview + first_frame_prompt as positive conditioning |
 | `example_workflow/example_clap.json` | CLAP semantic embedding — semantic_summary output shown via PreviewAny, ready to wire into AudioMoodAnalyzer.custom_context |
 | `example_workflow/example_composition.json` | Composition inference — AudioMoodAnalyzer → CompositionInferenceNode, width/height wired into EmptyLatentImage, composition_prompt shown via PreviewAny |
+| `example_workflow/example_mood_unpack_enrich.json` | Unpacking and enrichment — AudioMoodAnalyzer → MoodJsonUnpacker (individual fields shown via PreviewAny) + PromptEnricher (merge_prompt enriched with color, lighting, texture) |
 
 ---
 

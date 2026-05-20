@@ -7,6 +7,10 @@
 - Ollama calls use `num_predict=-1` — never set a token limit; thinking models (qwen3 et al.) need unbounded output.
 - Subject analysis is opt-in: only runs when at least one of lyrics_or_text, focus_fragment, song_title, song_description, or song_genre is non-empty.
 
+## When adding a new node
+- Add an `example_workflow/example_<name>.json` sample workflow
+- Document the node in `README.md` (## Nodes section + example workflows table)
+
 ## Intentional decisions
 - `analysis_temperature` (0.4) and `prompt_temperature` (0.8) are separate: structured JSON calls use low temp, creative prompt generation uses high temp.
 - Subject prompt is silently skipped (with a log warning) when no subject analysis is available — not an error.
