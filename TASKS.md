@@ -6,23 +6,15 @@
   "updated": "2026-05-17",
 
   "current_session": {
-    "id": "S-008",
-    "goal": "MoodJsonUnpacker + PromptEnricher nodes — usability improvement, modularization pattern",
-    "task_ref": null,
-    "started": "2026-05-20",
+    "id": "S-009",
+    "goal": "Tests for CompositionInferenceNode (T-009)",
+    "task_ref": "T-009",
+    "started": "2026-05-22",
     "status": "done",
     "blocker": null
   },
 
-  "backlog": [
-    {
-      "id": "T-009",
-      "title": "Tests for CompositionInferenceNode",
-      "size": "S",
-      "status": "pending",
-      "notes": "See testing section in docs/superpowers/specs/2026-05-19-composition-inference-design.md. Mock _ollama_generate. Cover: all required JSON keys, orientation constraint, width/height match recommended_resolution, composition_prompt non-empty, fallback to 1024x1024 on malformed JSON, empty subject_json does not raise."
-    }
-  ],
+  "backlog": [],
 
   "decisions": [
     {
@@ -174,6 +166,13 @@
       "completed_date": "2026-05-19",
       "session_ref": "S-007",
       "notes": "_parse_resolution, _COMPOSITION_FALLBACK, two-call pipeline, width/height INT outputs, composition_prompt STRING output."
+    },
+    {
+      "id": "T-009",
+      "title": "Tests for CompositionInferenceNode",
+      "completed_date": "2026-05-22",
+      "session_ref": "S-009",
+      "notes": "30 tests. TestParseResolution (7), TestCompositionInferenceNodeMeta (7), TestCompositionInferenceNodeHappyPath (9), TestCompositionInferenceNodeFallback (7). All passing."
     }
   ]
 }
