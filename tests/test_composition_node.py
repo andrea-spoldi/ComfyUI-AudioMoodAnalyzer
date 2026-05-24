@@ -1,14 +1,17 @@
 import json
-import sys
+import sys, os
 import unittest
 from unittest.mock import MagicMock, patch
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Stub heavy dependencies before import
 for mod in ["librosa", "soundfile", "numpy", "transformers"]:
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-import audio_mood_analyzer as ama
+import fear_of_the_art_audio_analyzer.composition_node as ama
+from fear_of_the_art_audio_analyzer.shared import _parse_resolution
 
 
 _MOOD_JSON = json.dumps({
@@ -55,12 +58,12 @@ def _make_node():
 
 def _run(node, mood=_MOOD_JSON, subject=_SUBJECT_JSON,
          llm_side_effect=None, llm_returns=None):
-    """Call node.infer with _ollama_generate mocked."""
+    """Call node.infer with _timed_generate mocked."""
     if llm_side_effect is not None:
         mock_gen = MagicMock(side_effect=llm_side_effect)
     else:
         mock_gen = MagicMock(side_effect=llm_returns or [_COMPOSITION_LLM_RESPONSE, _PROSE_RESPONSE])
-    with patch.object(node, "_ollama_generate", mock_gen):
+    with patch('fear_of_the_art_audio_analyzer.composition_node._timed_generate', mock_gen):
         return node.infer(
             mood_json=mood,
             subject_json=subject,
@@ -73,26 +76,26 @@ def _run(node, mood=_MOOD_JSON, subject=_SUBJECT_JSON,
 
 class TestParseResolution(unittest.TestCase):
     def test_ascii_x_separator(self):
-        self.assertEqual(ama._parse_resolution("1024x1280"), (1024, 1280))
+        self.assertEqual(_parse_resolution("1024x1280"), (1024, 1280))
 
     def test_unicode_times_separator(self):
-        self.assertEqual(ama._parse_resolution("1024×1280"), (1024, 1280))
+        self.assertEqual(_parse_resolution("1024×1280"), (1024, 1280))
 
     def test_square(self):
-        self.assertEqual(ama._parse_resolution("1024x1024"), (1024, 1024))
+        self.assertEqual(_parse_resolution("1024x1024"), (1024, 1024))
 
     def test_whitespace_around_values(self):
-        self.assertEqual(ama._parse_resolution(" 832 x 1216 "), (832, 1216))
+        self.assertEqual(_parse_resolution(" 832 x 1216 "), (832, 1216))
 
     def test_none_input_returns_default(self):
-        self.assertEqual(ama._parse_resolution(None), (1024, 1024))
+        self.assertEqual(_parse_resolution(None), (1024, 1024))
 
     def test_garbage_string_returns_default(self):
-        self.assertEqual(ama._parse_resolution("not_a_resolution"), (1024, 1024))
+        self.assertEqual(_parse_resolution("not_a_resolution"), (1024, 1024))
 
     def test_unicode_separator_tried_before_ascii(self):
         # "1024×1280" contains × but not x — should parse correctly
-        w, h = ama._parse_resolution("1024×1280")
+        w, h = _parse_resolution("1024×1280")
         self.assertEqual((w, h), (1024, 1280))
 
 
@@ -172,7 +175,7 @@ class TestCompositionInferenceNodeHappyPath(unittest.TestCase):
     def test_width_height_match_recommended_resolution(self):
         data = json.loads(self.comp_json)
         res = data["aspect_ratio"]["recommended_resolution"]
-        expected_w, expected_h = ama._parse_resolution(res)
+        expected_w, expected_h = _parse_resolution(res)
         self.assertEqual(self.width, expected_w)
         self.assertEqual(self.height, expected_h)
 
@@ -183,7 +186,7 @@ class TestCompositionInferenceNodeHappyPath(unittest.TestCase):
     def test_two_ollama_calls_made(self):
         node = _make_node()
         mock_gen = MagicMock(side_effect=[_COMPOSITION_LLM_RESPONSE, _PROSE_RESPONSE])
-        with patch.object(node, "_ollama_generate", mock_gen):
+        with patch('fear_of_the_art_audio_analyzer.composition_node._timed_generate', mock_gen):
             node.infer(
                 mood_json=_MOOD_JSON, subject_json=_SUBJECT_JSON,
                 ollama_url="http://localhost:11434/api/generate",
@@ -195,9 +198,10 @@ class TestCompositionInferenceNodeHappyPath(unittest.TestCase):
         node = _make_node()
         calls = []
         def capture(*args, **kwargs):
-            calls.append(kwargs.get("temperature", args[3] if len(args) > 3 else None))
+            # _timed_generate(label, ollama_url, model, prompt, temperature, num_predict=-1)
+            calls.append(kwargs.get("temperature", args[4] if len(args) > 4 else None))
             return [_COMPOSITION_LLM_RESPONSE, _PROSE_RESPONSE][len(calls) - 1]
-        with patch.object(node, "_ollama_generate", side_effect=capture):
+        with patch('fear_of_the_art_audio_analyzer.composition_node._timed_generate', side_effect=capture):
             node.infer(
                 mood_json=_MOOD_JSON, subject_json=_SUBJECT_JSON,
                 ollama_url="http://localhost:11434/api/generate",

@@ -1,7 +1,7 @@
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from audio_mood_analyzer import AudioMoodAnalyzerTimeline
+from fear_of_the_art_audio_analyzer.analyzer_nodes import AudioMoodAnalyzerTimeline
 
 
 def test_timeline_node_exists():
@@ -88,7 +88,7 @@ def fake_timed_generate(label, ollama_url, model, prompt, temperature, num_predi
 def run_timeline(n_segments=4, lyrics="some lyrics", generate_subject_prompt=True):
     CALL_COUNTER.clear()
     node = AudioMoodAnalyzerTimeline()
-    with patch.object(node, "_timed_generate", side_effect=fake_timed_generate), \
+    with patch('fear_of_the_art_audio_analyzer.analyzer_nodes._timed_generate', side_effect=fake_timed_generate), \
          patch.object(node, "_audio_to_numpy", return_value=(DUMMY_Y, 44100)), \
          patch.object(node, "_extract_features", return_value=DUMMY_FEATURES):
         return node.analyze_timeline(

@@ -1,4 +1,6 @@
-import sys, types, unittest
+import sys, os, types, unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from unittest.mock import patch, MagicMock
 
 # Import real torch now (before any stubbing) so tests can use real tensors.
@@ -10,7 +12,7 @@ for mod in ["librosa", "soundfile", "numpy", "transformers"]:
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-import audio_mood_analyzer as ama
+import fear_of_the_art_audio_analyzer.clap_node as ama
 
 class TestResolveClapDevice(unittest.TestCase):
     def test_explicit_cpu(self):
@@ -125,6 +127,7 @@ class TestClapAudioAnalyzer(unittest.TestCase):
         mock_model.get_text_features.return_value = t
         mock_proc = MagicMock()
         mock_proc.return_value = {}
+        mock_proc.feature_extractor.sampling_rate = 48000  # matches audio sr → no librosa.resample
 
         import contextlib
         with patch.object(ama, "_get_clap_model", return_value=(mock_model, mock_proc)), \
@@ -151,6 +154,7 @@ class TestClapAudioAnalyzer(unittest.TestCase):
         mock_model.get_text_features.return_value = t
         mock_proc = MagicMock()
         mock_proc.return_value = {}
+        mock_proc.feature_extractor.sampling_rate = 48000  # matches audio sr → no librosa.resample
 
         import contextlib
         with patch.object(ama, "_get_clap_model", return_value=(mock_model, mock_proc)), \

@@ -1,13 +1,16 @@
-import sys, unittest
+import sys, os, unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from unittest.mock import MagicMock
 import json
 
-# Stub heavy dependencies so importing mood_json_nodes never fails in CI
+# Stub heavy dependencies so importing the package never fails in CI
 for mod in ["librosa", "soundfile", "numpy", "torch", "transformers"]:
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-import mood_json_nodes as mjn
+from fear_of_the_art_audio_analyzer.mood_json_nodes import MoodJsonUnpacker, PromptEnricher
+import fear_of_the_art_audio_analyzer.mood_json_nodes as mjn
 
 
 FULL_MOOD = {

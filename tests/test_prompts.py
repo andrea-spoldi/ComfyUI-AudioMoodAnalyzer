@@ -1,7 +1,7 @@
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from audio_mood_analyzer import _build_style_block
+from fear_of_the_art_audio_analyzer.shared import _build_style_block
 
 def test_known_preset_returns_preset_text():
     result = _build_style_block("painterly", "")

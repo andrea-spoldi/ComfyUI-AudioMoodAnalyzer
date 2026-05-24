@@ -1,7 +1,8 @@
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from audio_mood_analyzer import AudioMoodAnalyzerAdvanced, _fmt_json
+from fear_of_the_art_audio_analyzer.analyzer_nodes import AudioMoodAnalyzerAdvanced
+from fear_of_the_art_audio_analyzer.shared import _fmt_json
 
 DUMMY_FEATURES = {"duration_seconds": 30, "tempo_bpm": 120}
 DUMMY_MOOD = {"sonic_mood": ["dark"], "energy_profile": "high", "tension_profile": "rising"}
@@ -58,7 +59,7 @@ def test_analyze_passes_override_to_mood_builder():
             return '{"sonic_mood":[],"energy_profile":"","tension_profile":"","visual_environment_implications":[],"lighting_implications":[],"color_palette":[],"texture_implications":[],"subject_presence":[],"composition_suggestions":[],"motion_feel":[],"camera_language":[],"avoid":[]}'
         return ""
 
-    with patch.object(node, '_timed_generate', side_effect=fake_timed_generate), \
+    with patch('fear_of_the_art_audio_analyzer.analyzer_nodes._timed_generate', side_effect=fake_timed_generate), \
          patch.object(node, '_audio_to_numpy', return_value=([], 44100)), \
          patch.object(node, '_extract_features', return_value=DUMMY_FEATURES):
         node.analyze(

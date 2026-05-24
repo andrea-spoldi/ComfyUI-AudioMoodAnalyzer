@@ -1,8 +1,8 @@
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 import json
-from audio_mood_analyzer import AnimateDiffScheduleFormatter
+from fear_of_the_art_audio_analyzer.formatter_nodes import AnimateDiffScheduleFormatter
 
 
 def make_segments(n=4, total_duration=18.0, prompt_prefix="prompt"):
