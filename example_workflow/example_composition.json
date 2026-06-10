@@ -143,6 +143,8 @@
         "Node name for S&R": "CompositionInferenceNode"
       },
       "widgets_values": [
+        "",
+        "",
         "http://localhost:11434/api/generate",
         "qwen3:14b",
         0.4,
@@ -242,7 +244,7 @@
         "Node name for S&R": "EmptyLatentImage"
       },
       "title": "EmptyLatentImage — wire LATENT to KSampler",
-      "widgets_values": [1]
+      "widgets_values": [1024, 1024, 1]
     }
   ],
   "links": [

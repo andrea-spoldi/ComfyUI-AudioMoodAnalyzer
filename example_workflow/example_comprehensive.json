@@ -100,6 +100,8 @@
       ],
       "properties": {"cnr_id": "comfyui_fearnworksnodes", "Node name for S&R": "CompositionInferenceNode"},
       "widgets_values": [
+        "",
+        "",
         "http://localhost:11434/api/generate",
         "qwen3:14b",
         0.4,
@@ -128,7 +130,7 @@
         {"name": "avoid", "type": "STRING", "links": null}
       ],
       "properties": {"cnr_id": "comfyui_fearnworksnodes", "Node name for S&R": "MoodJsonUnpacker"},
-      "widgets_values": []
+      "widgets_values": [""]
     },
     {
       "id": 6,
@@ -147,6 +149,8 @@
       ],
       "properties": {"cnr_id": "comfyui_fearnworksnodes", "Node name for S&R": "PromptEnricher"},
       "widgets_values": [
+        "",
+        "",
         "color_palette\nlighting_implications\ntexture_implications"
       ],
       "title": "Prompt Enricher (merge_prompt + mood)"
@@ -221,7 +225,7 @@
         {"name": "CONDITIONING", "type": "CONDITIONING", "links": [15]}
       ],
       "properties": {"cnr_id": "comfy-core", "ver": "0.21.0", "Node name for S&R": "CLIPTextEncode"},
-      "widgets_values": [""],
+      "widgets_values": ["enriched prompt auto-filled by link"],
       "title": "POSITIVE — enriched merge prompt",
       "color": "#232",
       "bgcolor": "#353"
@@ -262,7 +266,7 @@
         {"name": "LATENT", "type": "LATENT", "links": [17]}
       ],
       "properties": {"cnr_id": "comfy-core", "ver": "0.21.0", "Node name for S&R": "EmptyLatentImage"},
-      "widgets_values": [1],
+      "widgets_values": [1024, 1024, 1],
       "title": "Latent — w/h from Composition"
     },
     {
